@@ -17,7 +17,7 @@ export interface ITask extends Document {
   updatedAt: Date;
 }
 
-const taskSchema = new Schema(
+const taskSchema = new Schema<ITask>(
   {
     title: {
       type: String,
@@ -30,6 +30,7 @@ const taskSchema = new Schema(
     requiredSkills: [
       {
         type: String,
+        required: true
       },
     ],
 

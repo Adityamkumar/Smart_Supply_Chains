@@ -5,8 +5,6 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
-
 // const allowedOrigins = process.env.CLIENT_URL?.split(",") || [];
 
 // app.use(
@@ -25,9 +23,14 @@ app.use(express.urlencoded({ extended: true }));
 //   })
 // );
 
-//user Router
-import userRouter from './routes/user.route.js'
-app.use('/api/user', userRouter)
+//user Route
+import userRouter from "./routes/user.route.js";
+app.use("/api/user", userRouter);
+
+//task Route
+import taskRouter from "./routes/task.route.js";
+app.use("/api/task", taskRouter);
+
 
 app.get("/", (req, res) => {
   res.send("Hello Welcome to my App");
