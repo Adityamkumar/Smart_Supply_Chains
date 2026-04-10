@@ -55,7 +55,7 @@ const AdminAssignmentPage: React.FC = () => {
     try {
        await api.post('/assignVolunteer/assign', { taskId: activeTaskId, volunteerId });
        toast.success('Volunteer manually assigned');
-       // Refresh lists
+
        triggerAI(activeTaskId);
     } catch (error: any) {
        toast.error(error.message || 'Manual assignment failed');
@@ -79,14 +79,14 @@ const AdminAssignmentPage: React.FC = () => {
         <div className="mx-auto w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-3xl flex items-center justify-center text-indigo-600 mb-6 shadow-lg shadow-indigo-500/10 scale-110">
            <Shield size={40} />
         </div>
-        <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white">AI Deployment Control</h1>
+        <h1 className="text-4xl font-extrabold text-[#0f172a] dark:text-white">AI Deployment Control</h1>
         <p className="text-slate-500 dark:text-slate-400 font-medium max-w-xl mx-auto">
            Orchestrate emergency response by matching the best volunteers to critical missions.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         {/* Tasks List */}
+         {}
          <div className="lg:col-span-1 space-y-6">
             <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                <ListChecks className="text-blue-600" />
@@ -131,7 +131,7 @@ const AdminAssignmentPage: React.FC = () => {
             )}
          </div>
 
-         {/* Results Area */}
+         {}
          <div className="lg:col-span-2 space-y-8">
             <div className="bg-white dark:bg-slate-900 rounded-[40px] border border-slate-200 dark:border-slate-800 p-8 shadow-sm relative overflow-hidden">
                {!showResults && !loading && (
@@ -187,7 +187,7 @@ const AdminAssignmentPage: React.FC = () => {
                           <div className="space-y-4">
                              <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] border-l-2 border-emerald-500 pl-3 flex items-center gap-2">
                                 <Check size={12} />
-                                Nearby Deployment (Within 10km)
+                                Nearby Deployment
                              </h3>
                              <div className="grid grid-cols-1 gap-6">
                                 {results.filter(r => r.status !== 'rejected' && !(r as any).isTooFar).map((result) => (
@@ -201,7 +201,7 @@ const AdminAssignmentPage: React.FC = () => {
                           <div className="space-y-4">
                              <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] border-l-2 border-rose-500 pl-3 flex items-center gap-2">
                                 <AlertCircle size={12} />
-                                Extended Deployment (Outside 10km)
+                                Extended Deployment
                              </h3>
                              <div className="grid grid-cols-1 gap-6">
                                 {results.filter(r => r.status !== 'rejected' && (r as any).isTooFar).map((result) => (
@@ -243,7 +243,6 @@ const AdminAssignmentPage: React.FC = () => {
 
 const AIResultCard: React.FC<{assignment: Assignment; onRevoke: (aid: string) => void}> = ({ assignment, onRevoke }) => {
   const volunteer = assignment.volunteer as any;
-  const distance = (assignment as any).distance;
   const isTooFar = (assignment as any).isTooFar;
   const isRejected = assignment.status === 'rejected';
 
@@ -278,17 +277,20 @@ const AIResultCard: React.FC<{assignment: Assignment; onRevoke: (aid: string) =>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                    {volunteer?.name || 'Assigned Volunteer'}
                 </h3>
+                <div className="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 leading-tight">
+                  {volunteer?.address || 'Deployment Base: Active'}
+                </div>
                 <div className="flex items-center gap-4 mt-1">
                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold uppercase tracking-wider">
                       <Sparkles size={14} className="text-indigo-400" />
                       {((assignment.aiScore || 0) * 100).toFixed(0)}% Match
                    </div>
-                   <div className={clsx(
-                     "flex items-center gap-1.5 text-[10px] font-bold uppercase px-2 py-0.5 rounded-md",
-                     isTooFar || isRejected ? "text-rose-600 bg-rose-50 dark:bg-rose-900/20" : "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
-                   )}>
-                      {distance ? `${distance} km away` : "Nearby"}
-                   </div>
+                    <div className={clsx(
+                      "flex items-center gap-1.5 text-[10px] font-bold uppercase px-2 py-0.5 rounded-md",
+                      isTooFar || isRejected ? "text-rose-600 bg-rose-50 dark:bg-rose-900/20" : "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
+                    )}>
+                       {(assignment as any).distance ? `${(assignment as any).distance} km away` : "Nearby"}
+                    </div>
                 </div>
              </div>
           </div>

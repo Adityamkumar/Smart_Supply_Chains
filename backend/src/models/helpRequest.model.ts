@@ -6,7 +6,7 @@ export interface IHelpRequest extends Document {
   description: string;
   location: {
     address: string;
-    coordinates: [number, number]; // [lng, lat]
+    coordinates: [number, number];
   };
   volunteersNeeded: number;
   priority: "low" | "medium" | "high" | "emergency";
@@ -47,7 +47,7 @@ const helpRequestSchema = new Schema<IHelpRequest>(
   { timestamps: true }
 );
 
-// Index for geo queries if needed in future
+
 helpRequestSchema.index({ "location.coordinates": "2dsphere" });
 
 export const HelpRequest = mongoose.model<IHelpRequest>("HelpRequest", helpRequestSchema);

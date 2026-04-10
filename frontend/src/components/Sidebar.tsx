@@ -26,7 +26,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {}
       <div 
         className={cn(
           "fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300",
@@ -35,10 +35,10 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
         onClick={onClose}
       />
 
-      {/* Sidebar Content */}
+      {}
       <aside 
         className={cn(
-          "fixed lg:static inset-y-0 left-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 transition-transform duration-300 transform lg:translate-x-0 h-screen overflow-y-auto",
+          "fixed lg:static inset-y-0 left-0 w-64 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 z-50 transition-transform duration-300 transform lg:translate-x-0 h-screen overflow-y-auto",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -86,9 +86,9 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
                 <MapPin size={12} className="text-blue-500" />
                 <span>My Station</span>
              </div>
-             <div className="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 leading-tight">
-                {user?.address || user?.location?.coordinates?.join(', ') || 'Global Response Net'}
-             </div>
+              <div className="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 leading-tight">
+                 {user?.address || 'Deployment Base: Active'}
+              </div>
            </div>
         </div>
       </aside>

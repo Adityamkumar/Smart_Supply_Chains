@@ -50,7 +50,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-10 max-w-6xl mx-auto pb-12">
-      {/* Role Badge and Welcome */}
+      {}
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-end justify-between">
          <div className="space-y-3">
             <div className={clsx(
@@ -91,7 +91,7 @@ const DashboardPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column - Profile/Info */}
+        {}
         <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 p-8 md:p-10 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity">
              <Activity size={240} className="text-blue-600" />
@@ -104,7 +104,7 @@ const DashboardPage: React.FC = () => {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-               {/* Skills / Specialization */}
+               {}
                <div className="space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400">Specialization</p>
                   <div className="flex flex-wrap gap-2 pt-2">
@@ -118,7 +118,7 @@ const DashboardPage: React.FC = () => {
                   </div>
                </div>
 
-               {/* Location */}
+               {}
                <div className="space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400">Tactical Station</p>
                   <div className="flex items-start gap-3 pt-2">
@@ -126,17 +126,14 @@ const DashboardPage: React.FC = () => {
                         <MapPin size={20} />
                      </div>
                      <div className="space-y-1">
-                        <p className="text-sm font-bold dark:text-slate-200 leading-tight">
+                        <p className="text-sm font-bold text-slate-900 dark:text-slate-200 leading-tight">
                           {user.address || 'Deployment Zone Unmapped'}
-                        </p>
-                        <p className="text-[10px] font-bold text-slate-400">
-                          COORDS: {user.location.coordinates[1].toFixed(4)}, {user.location.coordinates[0].toFixed(4)}
                         </p>
                      </div>
                   </div>
                </div>
 
-               {/* Performance / Status */}
+               {}
                <div className="space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400">Capability Rating</p>
                   <div className="flex items-center gap-2 pt-2">
@@ -149,7 +146,7 @@ const DashboardPage: React.FC = () => {
                   </div>
                </div>
 
-               {/* Service History */}
+               {}
                <div className="space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400">Active Service Since</p>
                   <div className="flex items-center gap-3 pt-2">
@@ -165,7 +162,7 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column - Real-time Stats */}
+        {}
         <div className="lg:col-span-4 flex flex-col gap-8">
            {isAdmin ? (
              <>

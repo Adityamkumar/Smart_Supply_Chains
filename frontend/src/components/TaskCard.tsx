@@ -21,7 +21,7 @@ const priorityColorMap = {
 };
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onViewDetails }) => {
-  // Dynamic Status Logic (Issue 8)
+
   const getDerivedStatus = () => {
     if (task.status === 'completed') return 'completed';
     const count = task.assignedCount || 0;

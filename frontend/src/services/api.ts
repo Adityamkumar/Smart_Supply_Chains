@@ -6,7 +6,7 @@ const api = axios.create({
   baseURL: '/api',
 });
 
-// Add a request interceptor
+
 api.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().token;
@@ -20,7 +20,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add a response interceptor
+
 api.interceptors.response.use(
   (response) => {
     return response;
@@ -28,8 +28,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle session expired / 401 Unauthenticated
-    // But DON'T redirect if we are already trying to login
+
+
     const isLoginRequest = originalRequest.url?.includes('/user/login');
     
     if (error.response?.status === 401 && !originalRequest._retry && !isLoginRequest) {

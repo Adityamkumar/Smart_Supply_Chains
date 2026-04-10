@@ -43,7 +43,7 @@ export const deleteTask = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Task not found");
     }
 
-    // Delete associated assignments
+
     await Assignment.deleteMany({ task: taskId });
     await task.deleteOne();
 
@@ -51,11 +51,11 @@ export const deleteTask = asyncHandler(async (req, res) => {
 });
 
 export const getAllTasks = asyncHandler(async (req, res) => {
-  // Using aggregate to get real assignments count
+
   const tasks = await Task.aggregate([
     {
       $lookup: {
-        from: "assignments", // check your collection name in mongo
+        from: "assignments",
         localField: "_id",
         foreignField: "task",
         as: "assignments"
@@ -96,7 +96,7 @@ export const getAllTasks = asyncHandler(async (req, res) => {
 });
 
 export const getOpenTasks = asyncHandler(async (req, res) => {
-    // Similar to getAllTasks but with filter
+
     const tasks = await Task.aggregate([
         {
           $lookup: {

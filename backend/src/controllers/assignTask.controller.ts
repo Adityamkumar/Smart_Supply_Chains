@@ -57,7 +57,7 @@ export const updateAssignmentStatus = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Assignment not found");
   }
 
-  //only assigned volunteer can update
+
   if (assignment.volunteer.toString() !== req.user?._id.toString()) {
     throw new ApiError(403, "Not allowed");
   }
@@ -104,7 +104,7 @@ export const deleteAssignment = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Assignment not found");
   }
 
-  // Decrement task assigned count
+
   const task = await Task.findById(assignment.task);
   if (task) {
     task.assignedCount = Math.max(0, task.assignedCount - 1);

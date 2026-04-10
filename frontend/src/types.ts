@@ -8,7 +8,7 @@ export type User = {
   skills: string[];
   location: {
     type: "Point";
-    coordinates: [number, number]; // [lng, lat]
+    coordinates: [number, number];
   };
   address?: string;
   availability: boolean;

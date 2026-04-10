@@ -16,33 +16,40 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
 
   const currentAssignmentsCount = await Assignment.countDocuments({ 
     task: task._id,
-    status: { $ne: "rejected" } // Only count active/pending assignments
+    status: { $ne: "rejected" }
   });
 
-  // Create case-insensitive regex patterns for each required skill
+
   const skillRegexes = (task.requiredSkills || []).map(skill => new RegExp(skill.trim(), 'i'));
 
-  // 1. Find potential volunteers with matching skills (sorting by distance)
+
   let volunteers = await User.find({
     role: "volunteer",
-    skills: { $in: skillRegexes },
+    availability: true,
+    $or: [
+        { skills: { $in: skillRegexes } },
+        { skills: { $size: 0 } },
+        { skills: "General Assistance" }
+    ],
     location: {
       $near: {
         $geometry: {
           type: "Point",
           coordinates: task.location.coordinates,
         },
-        $maxDistance: 1000000, 
+        $maxDistance: 10000,
       },
     },
-  }).limit(50);
+  }).limit(10);
 
-  // 2. Global fallback - no distance limit
-  if (volunteers.length === 0) {
-    volunteers = await User.find({
+
+  if (volunteers.length < 5) {
+    const backupVolunteers = await User.find({
       role: "volunteer",
-      skills: { $in: skillRegexes }
-    }).limit(50);
+      availability: true,
+      _id: { $nin: volunteers.map(v => v._id) }
+    }).limit(20);
+    volunteers = [...volunteers, ...backupVolunteers];
   }
 
   const assignments: any[] = [];
@@ -55,9 +62,9 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
       volunteer.location.coordinates,
     );
     
-    const isNearby = distance <= 10; // 10km threshold
+    const isNearby = distance <= 10;
 
-    // Check if volunteer is already assigned
+
     const existing = await Assignment.findOne({
       task: task._id,
       volunteer: volunteer._id,
@@ -67,7 +74,7 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
        const existingWithDist = existing.toObject() as any;
        existingWithDist.distance = distance.toFixed(1);
        existingWithDist.isTooFar = !isNearby;
-       // Ensure numeric values for UI
+
        existingWithDist.aiScore = existingWithDist.aiScore || 0;
        existingWithDist.aiReason = existingWithDist.aiReason || "Manually assigned candidate";
        assignments.push(existingWithDist);
@@ -80,7 +87,7 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
       const assignment = await Assignment.create({
         task: task._id,
         volunteer: volunteer._id,
-        aiScore: aiResult.score || 0.5, // Ensure score is never undefined
+        aiScore: aiResult.score || 0.5,
         aiReason: aiResult.reason || "High matching skills nearby",
       });
       
@@ -91,7 +98,7 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
       assignments.push(assignmentWithDist);
       successfulAssignmentsCount++;
     } else {
-      // Suggestion for manual approval
+
       suggestions.push({
         volunteer,
         aiScore: aiResult.score || 0.4,
@@ -102,7 +109,7 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
     }
   }
 
-  // Update task stats
+
   task.assignedCount = currentAssignmentsCount + successfulAssignmentsCount;
   if (task.assignedCount >= task.volunteersNeeded) {
     task.status = "in-progress";

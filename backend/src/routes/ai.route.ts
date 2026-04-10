@@ -5,7 +5,7 @@ import { authorizeRoles } from "../middleware/role.middleware.js";
 
 const router = Router();
 
-// AI assignment route (admin only)
+
 router.post(
   "/auto-assign",
   verifyJwt,

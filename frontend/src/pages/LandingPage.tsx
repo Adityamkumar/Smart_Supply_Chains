@@ -7,7 +7,7 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 overflow-x-hidden selection:bg-blue-500/30">
-      {/* Navigation */}
+      {}
       <nav className="h-20 flex items-center justify-between px-4 sm:px-6 md:px-12 border-b border-white/5 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30">
@@ -32,9 +32,9 @@ const LandingPage: React.FC = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {}
       <main className="relative pt-12 sm:pt-20 pb-20 sm:pb-32 px-4 sm:px-6">
-         {/* Animated Background Gradients */}
+         {}
          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[800px] h-[600px] sm:h-[800px] bg-blue-600/20 blur-[80px] sm:blur-[120px] rounded-full -z-10 animate-pulse"></div>
          
          <div className="max-w-7xl mx-auto text-center space-y-8 sm:space-y-12">
@@ -72,7 +72,7 @@ const LandingPage: React.FC = () => {
             </div>
          </div>
 
-         {/* Feature Grid */}
+         {}
          <div className="max-w-7xl mx-auto mt-40 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white/5 border border-white/10 p-10 rounded-[2.5rem] backdrop-blur-md hover:bg-white/[0.07] transition-all">
                <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">

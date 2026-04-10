@@ -47,7 +47,7 @@ const TasksPage: React.FC = () => {
   };
 
   const filteredTasks = tasks.filter(task => {
-    // Derived status logic must match TaskCard (Issue Sync)
+
     const getDerivedStatus = (t: Task) => {
       if (t.status === 'completed') return 'completed';
       const count = t.assignedCount || 0;
@@ -88,7 +88,7 @@ const TasksPage: React.FC = () => {
         )}
       </div>
 
-      {/* Filters & Search */}
+      {}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row gap-6 items-center">
         <div className="relative flex-1 w-full">
            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -480,7 +480,7 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
     }
   });
 
-  // Dynamic Status Logic (Issue 8)
+
   const getDerivedStatus = () => {
     if (task.status === 'completed') return 'completed';
     const activeAssignments = assignments.filter(a => a.status !== 'rejected');
@@ -526,7 +526,7 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
 
           <div className="flex-1 overflow-y-auto p-8 lg:p-12 space-y-12">
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                {/* Left Column: Task Data */}
+                {}
                 <div className="space-y-8">
                    <div className="space-y-4">
                       <h4 className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 flex items-center gap-2">
@@ -581,7 +581,7 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
                    </div>
                 </div>
 
-                {/* Right Column: Assignments Data (Issue 2) */}
+                {}
                 <div className="space-y-6">
                    <div className="flex items-center justify-between bg-slate-900 dark:bg-black p-4 rounded-2xl shadow-xl">
                       <div className="flex items-center gap-3">
@@ -647,7 +647,7 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
                       )}
                    </div>
 
-                   {/* AI Insight Section (requested in Issue 2) */}
+                   {}
                    {assignments.some(a => a.aiReason) && (
                       <div className="p-6 bg-indigo-600 rounded-[2rem] shadow-2xl shadow-indigo-600/20 text-white relative overflow-hidden group">
                          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">

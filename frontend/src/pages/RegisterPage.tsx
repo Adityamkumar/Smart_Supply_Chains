@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { User, Mail, Lock, UserPlus, MapPin, Check, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, UserPlus, MapPin, Check, Loader2, RefreshCw } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const AVAILABLE_SKILLS = [
@@ -46,7 +46,7 @@ const RegisterPage: React.FC = () => {
             skills: selectedSkills,
             location: {
                 type: "Point",
-                coordinates: [formData.lng, formData.lat] // [lng, lat]
+                coordinates: [formData.lng, formData.lat]
             },
             address: formData.address
         }
@@ -116,7 +116,7 @@ const RegisterPage: React.FC = () => {
 
         <form onSubmit={handleRegister} className="p-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Basic Info */}
+            {}
             <div className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Basic Information</h3>
               
@@ -181,7 +181,7 @@ const RegisterPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Profile & Skills */}
+            {}
             <div className="space-y-4">
                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Skills & Location</h3>
 
@@ -210,26 +210,59 @@ const RegisterPage: React.FC = () => {
                   </div>
                </div>
 
-               <div className="space-y-2 pt-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Location</label>
-                  <div className="flex gap-2">
-                    <button 
-                      type="button" 
-                      disabled={isLocating}
-                      onClick={getCurrentLocation}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl border-2 border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 transition-colors font-medium text-sm disabled:opacity-50"
-                    >
-                      {isLocating ? <Loader2 className="animate-spin" size={18} /> : <MapPin size={18} />}
-                      {isLocating ? "Locating..." : "Get Location Details"}
-                    </button>
+               <div className="space-y-4 pt-2">
+                  <div className="flex flex-col gap-3">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Tactical Station Location</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input 
+                          type="text"
+                          placeholder="Search your city/area..."
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const query = (e.target as HTMLInputElement).value;
+                              if (query) {
+                                setIsLocating(true);
+                                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`)
+                                  .then(res => res.json())
+                                  .then(data => {
+                                    if (data && data.length > 0) {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        lat: parseFloat(data[0].lat),
+                                        lng: parseFloat(data[0].lon),
+                                        address: data[0].display_name
+                                      }));
+                                      toast.success("Station location identified!");
+                                    } else {
+                                      toast.error("Location not found");
+                                    }
+                                  })
+                                  .finally(() => setIsLocating(false));
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                      <button 
+                        type="button" 
+                        disabled={isLocating}
+                        onClick={getCurrentLocation}
+                        className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl border-2 border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                        title="Use my current GPS"
+                      >
+                        {isLocating ? <Loader2 className="animate-spin" size={20} /> : <RefreshCw size={20} />}
+                      </button>
+                    </div>
                   </div>
                   <div className="pt-2">
-                    <textarea 
-                      readOnly
-                      placeholder="Your identified address will appear here..."
-                      value={formData.address}
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent rounded-xl outline-none dark:text-white text-sm resize-none h-24 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                    />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Identified Address</p>
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-transparent text-sm dark:text-white font-medium min-h-[60px]">
+                      {formData.address || 'Search above or use GPS detect...'}
+                    </div>
                   </div>
                </div>
             </div>

@@ -27,7 +27,7 @@ Closer volunteers should be preferred.
 
 Return JSON:
 {
-  "score": number (1-10),
+  "score": number (0.0 to 1.0),
   "reason": "short explanation within one or two lines, including distance"
 }
 `;

@@ -99,7 +99,7 @@ const MyAssignmentsPage: React.FC = () => {
         </div>
       )}
       
-      {/* Quick Summary Bar */}
+      {}
       {!loading && assignments.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-10">
            <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 p-4 rounded-2xl flex items-center gap-4">

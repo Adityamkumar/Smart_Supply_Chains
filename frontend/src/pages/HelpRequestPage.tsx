@@ -21,17 +21,33 @@ const HelpRequestPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
+
+      let coordinates = [80.2707 + (Math.random() - 0.5) * 0.01, 13.0827 + (Math.random() - 0.5) * 0.01];
+      try {
+        const query = formData.address.trim();
+
+        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=3&addressdetails=1`);
+        const geoData = await geoRes.json();
+        if (geoData && geoData.length > 0) {
+
+          const bestMatch = geoData.find((d: any) => d.type === 'house' || d.type === 'street' || d.type === 'residential') || geoData[0];
+          coordinates = [parseFloat(bestMatch.lon), parseFloat(bestMatch.lat)];
+        }
+      } catch (err) {
+        console.error("Geocoding failed");
+      }
+
       await api.post('/help-requests', {
         ...formData,
         location: {
           address: formData.address,
-          coordinates: [80.2707, 13.0827], // Manual entry default center
+          coordinates
         }
       });
       toast.success("Your request has been submitted. Our team will contact you soon.", { duration: 5000 });
       navigate('/');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to submit request");
+      toast.error(error.message || "Failed to submit request");
     } finally {
       setLoading(false);
     }

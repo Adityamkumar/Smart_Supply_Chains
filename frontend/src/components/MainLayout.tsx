@@ -7,11 +7,11 @@ const MainLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
-      {/* Sidebar - Desktop and Mobile wrapper */}
+    <div className="flex h-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)] transition-colors duration-300">
+      {}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
-      {/* Main Content Area */}
+      {}
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar onOpenSidebar={() => setIsSidebarOpen(true)} />
         
@@ -21,7 +21,7 @@ const MainLayout: React.FC = () => {
           </div>
         </main>
         
-        {/* Footer */}
+        {}
         <footer className="h-12 border-t border-slate-200 dark:border-slate-800 flex items-center justify-center text-xs text-slate-500 dark:text-slate-400 font-medium">
           &copy; {new Date().getFullYear()} VolunSync AI - Modern Volunteer Coordination
         </footer>

@@ -38,7 +38,7 @@ const assignmentSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// Prevent duplicate assignment
+
 assignmentSchema.index({ task: 1, volunteer: 1 }, { unique: true });
 
 export const Assignment = mongoose.model<IAssignment>(

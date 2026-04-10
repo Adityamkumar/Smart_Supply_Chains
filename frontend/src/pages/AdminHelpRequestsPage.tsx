@@ -42,11 +42,11 @@ const AdminHelpRequestsPage: React.FC = () => {
 
   const convertToTaskMutation = useMutation({
     mutationFn: async (request: HelpRequest) => {
-      // 1. Create the task
+
       const taskResponse = await api.post('/task/create', {
         title: `HELP: ${request.description.substring(0, 30)}...`,
         description: request.description,
-        requiredSkills: ["General Assistance"], // Default
+        requiredSkills: ["General Assistance"],
         address: request.location.address,
         location: {
           type: 'Point',
@@ -56,7 +56,7 @@ const AdminHelpRequestsPage: React.FC = () => {
         priority: request.priority === 'emergency' ? 'high' : request.priority as any,
       });
 
-      // 2. Link the task back to the request and update status to 'converted'
+
       await api.patch(`/help-requests/${request._id}`, {
         status: 'converted',
         linkedTask: taskResponse.data.data._id
@@ -132,7 +132,7 @@ const AdminHelpRequestsPage: React.FC = () => {
                  req.status === 'converted' && "opacity-80 border-blue-500/20"
                )}
              >
-                {/* Priority Badge */}
+                {}
                 <div className={clsx(
                   "absolute top-0 right-0 px-6 py-2 text-white text-[10px] font-black uppercase tracking-widest rounded-bl-3xl flex items-center gap-2",
                   req.priority === 'emergency' ? "bg-red-600 animate-pulse" :

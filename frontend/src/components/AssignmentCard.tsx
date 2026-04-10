@@ -31,7 +31,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onAccept, o
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all group overflow-hidden relative">
-      {/* AI Score Badge */}
+      {}
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
          <Sparkles size={120} className="text-blue-500" />
       </div>

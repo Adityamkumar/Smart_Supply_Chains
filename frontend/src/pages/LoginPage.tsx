@@ -22,7 +22,7 @@ const LoginPage: React.FC = () => {
       setAuth(user, accessToken);
       toast.success('Welcome back!');
       navigate('/dashboard');
-    } catch (error: any) {
+    } catch (error:any) {
       toast.error(error.message || 'Invalid credentials');
     } finally {
       setLoading(false);
