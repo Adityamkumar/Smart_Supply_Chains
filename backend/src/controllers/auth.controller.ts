@@ -142,3 +142,25 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     throw new ApiError(401,"Invalid refresh token");
   }
 });
+
+export const updateProfile = asyncHandler(async (req, res) => {
+  const { availability, skills, location } = req.body;
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        ...(availability !== undefined && { availability }),
+        ...(skills && { skills }),
+        ...(location && { location }),
+      },
+    },
+    { new: true, runValidators: true }
+  ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.json(new ApiResponse(200, user, "Profile updated successfully"));
+});

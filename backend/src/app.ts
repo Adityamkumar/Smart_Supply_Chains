@@ -42,9 +42,32 @@ app.use('/api/assignVolunteer', assignVolunteerRouter)
 import aiRoutes from "./routes/ai.route.js";
 app.use("/api/assign/ai", aiRoutes);
 
+//help request route
+import helpRequestRouter from "./routes/helpRequest.route.js";
+app.use("/api/help-requests", helpRequestRouter);
+
 
 app.get("/", (req, res) => {
   res.send("Hello Welcome to my App");
+});
+
+// error mapping
+import { ApiError } from "./utils/ApiError.js";
+
+app.use((err: any, req: any, res: any, next: any) => {
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      errors: err.errors,
+    });
+  }
+
+  // Fallback for other errors
+  return res.status(500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
 });
 
 export default app;

@@ -8,6 +8,7 @@ export interface ITask extends Document {
     type: "Point";
     coordinates: [number, number];
   };
+  address?: string;
   volunteersNeeded: number;
   assignedCount: number;
   status: "open" | "in-progress" | "completed";
@@ -44,6 +45,9 @@ const taskSchema = new Schema<ITask>(
         type: [Number],
         required: true,
       },
+    },
+    address: {
+      type: String,
     },
     volunteersNeeded: {
       type: Number,

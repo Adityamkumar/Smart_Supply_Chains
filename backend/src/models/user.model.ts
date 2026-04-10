@@ -12,6 +12,7 @@ export interface IUser extends Document {
     type: "Point";
     coordinates: [number, number]; // [lng, lat]
   };
+  address?: string;
   availability: boolean;
   refreshToken:string;
   generateAccessToken(): string
@@ -66,6 +67,9 @@ const userSchema = new Schema<IUser>(
         type: [Number],
         required: true,
       },
+    },
+    address: {
+      type: String,
     },
 
     availability: {

@@ -13,7 +13,9 @@ export const assignVolunteer = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Task not found");
   }
 
-  if (task.assignedCount >= task.volunteersNeeded) {
+  const assignmentCount = await Assignment.countDocuments({ task: taskId });
+
+  if (assignmentCount >= task.volunteersNeeded) {
     throw new ApiError(400, "Task already full");
   }
 
@@ -73,11 +75,48 @@ export const getMyAssignments = asyncHandler(async (req, res) => {
   const assignments = await Assignment.find({
     volunteer: req.user?._id,
   })
-    .populate("task", "title description location priority status")
+    .populate("task", "title description location priority status address")
     .populate('volunteer', 'name email')
     .sort({ createdAt: -1 });
 
   return res.json(
     new ApiResponse(200, assignments, "My assignments fetched")
+  );
+});
+
+export const getTaskAssignments = asyncHandler(async (req, res) => {
+  const { taskId } = req.params as { taskId: string };
+
+  const assignments = await Assignment.find({ task: taskId })
+    .populate('volunteer', 'name email skills')
+    .sort({ createdAt: -1 });
+
+  return res.json(
+    new ApiResponse(200, assignments, "Task assignments fetched")
+  );
+});
+
+export const deleteAssignment = asyncHandler(async (req, res) => {
+  const { assignmentId } = req.params as { assignmentId: string };
+
+  const assignment = await Assignment.findById(assignmentId);
+  if (!assignment) {
+    throw new ApiError(404, "Assignment not found");
+  }
+
+  // Decrement task assigned count
+  const task = await Task.findById(assignment.task);
+  if (task) {
+    task.assignedCount = Math.max(0, task.assignedCount - 1);
+    if (task.assignedCount < task.volunteersNeeded) {
+        task.status = "open";
+    }
+    await task.save();
+  }
+
+  await assignment.deleteOne();
+
+  return res.json(
+    new ApiResponse(200, {}, "Assignment deleted successfully")
   );
 });
