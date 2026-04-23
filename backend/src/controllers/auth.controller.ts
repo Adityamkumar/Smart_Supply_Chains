@@ -1,11 +1,13 @@
 import jwt from 'jsonwebtoken'
 import { User } from "../models/user.model.js";
+import { redis } from "../config/redis.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { generateAccessTokenAndRefreshToken } from "../utils/generateToken.js";
 import {
   accessCookieOptions,
   refreshCookieOptions,
+  clearCookieOptions,
 } from "../config/cookie.config.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
@@ -89,6 +91,20 @@ export const loginUser = asyncHandler(async (req, res) => {
 });
 
 export const logoutUser = asyncHandler(async (req, res) => {
+  // const token = req.cookies?.accessToken || req.header("authorization")?.replace("Bearer ", "");
+  // if (token) {
+  //   try {
+  //     const decoded: any = jwt.decode(token);
+  //     if (decoded && decoded.exp) {
+  //       const currentTime = Math.floor(Date.now() / 1000);
+  //       const expiryTime = decoded.exp - currentTime;
+  //       if (expiryTime > 0) {
+  //         await redis.set(`blacklist:${token}`, "1", "EX", expiryTime);
+  //       }
+  //     }
+  //   } catch (e) {}
+  // }
+
   await User.findByIdAndUpdate(
     req.user._id,
     {
@@ -102,9 +118,9 @@ export const logoutUser = asyncHandler(async (req, res) => {
   )
   return res
     .status(200)
-    .clearCookie("accessToken", accessCookieOptions)
-    .clearCookie("refreshToken", refreshCookieOptions)
-    .json(new ApiResponse(200, "User Logged out successfully"));
+    .clearCookie("accessToken", clearCookieOptions)
+    .clearCookie("refreshToken", clearCookieOptions)
+    .json(new ApiResponse(200, {}, "User Logged out successfully"));
 });
 
 export const refreshAccessToken = asyncHandler(async (req, res) => {

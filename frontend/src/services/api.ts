@@ -35,9 +35,13 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry && !isLoginRequest) {
       originalRequest._retry = true;
       try {
-        useAuthStore.getState().logout();
-        toast.error('Session expired. Please login again.');
-        window.location.href = '/login';
+        const response = await axios.get('/api/user/refresh');
+        const newToken = response.data.data.accessToken;
+        const currentUser = useAuthStore.getState().user;
+        useAuthStore.getState().setAuth(currentUser, newToken);
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        // Retry the original request with new token
+        return api(originalRequest);
       } catch (err) {
         useAuthStore.getState().logout();
         toast.error('Session expired. Please login again.');

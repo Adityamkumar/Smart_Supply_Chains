@@ -12,6 +12,13 @@ const SEVEN_DAYS = 7 * ONE_DAY;
       path: "/",
     };
 
+    export const clearCookieOptions: CookieOptions = {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        path: "/",
+    };
+
   export const accessCookieOptions: CookieOptions = {
       httpOnly: true,
       secure: isProduction,

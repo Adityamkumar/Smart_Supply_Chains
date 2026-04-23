@@ -33,7 +33,7 @@ Return JSON:
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
     });
 
@@ -42,8 +42,8 @@ Return JSON:
     const cleaned = text?.replace(/```json|```/g, "").trim();
 
     return JSON.parse(cleaned!);
-  } catch (error) {
-    console.log("AI Error:", error);
+  } catch (error: any) {
+    console.warn(`[AI Service Warning]: Failed to fetch AI score (${error.status || 'API Error'}). Using fallback matching.`);
 
     return {
       score: 1,

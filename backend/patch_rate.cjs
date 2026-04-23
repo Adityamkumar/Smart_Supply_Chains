@@ -1,4 +1,8 @@
-import rateLimit from 'express-rate-limit';
+const fs = require('fs');
+
+let content = fs.readFileSync('src/middleware/rateLimiter.middleware.ts', 'utf-8');
+
+content = `import rateLimit from 'express-rate-limit';
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { redis } from "../config/redis.js";
@@ -6,7 +10,7 @@ import { redis } from "../config/redis.js";
 // Custom Rate Limiter using Redis for /help-requests
 export const helpRequestLimiter = asyncHandler(async (req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress || "unknown_ip";
-    const key = `rate:${ip}`;
+    const key = \`rate:\${ip}\`;
 
     const count = await redis.incr(key);
 
@@ -32,3 +36,7 @@ export const authLimiter = rateLimit({
         message: "Multiple authentication attempts detected. Access blocked for 2 minutes to ensure account security."
     }
 });
+`;
+
+fs.writeFileSync('src/middleware/rateLimiter.middleware.ts', content);
+console.log('rateLimiter.middleware.ts patched successfully');

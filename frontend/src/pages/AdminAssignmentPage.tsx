@@ -1,239 +1,268 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import type { Task, Assignment } from '../types';
-import { Shield, Loader2, Sparkles, AlertCircle, User as UserIcon, Check, ListChecks, Play, Trash2, XOctagon } from 'lucide-react';
+import { Shield, Loader2, Sparkles, AlertCircle, User as UserIcon, Check, ListChecks, Play, Trash2, XOctagon, MapPin, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminAssignmentPage: React.FC = () => {
-  const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [tasksLoading, setTasksLoading] = useState(true);
+  const [selectedTaskId, setSelectedTaskId] = useState<string>('');
   const [results, setResults] = useState<Assignment[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchOpenTasks();
+    const fetchTasks = async () => {
+      try {
+        const response = await api.get('/task/all');
+        setTasks(response.data.data.filter((t: Task) => t.status === 'open'));
+      } catch (error) {
+        console.error('Failed to fetch tasks', error);
+      }
+    };
+    fetchTasks();
   }, []);
 
-  const fetchOpenTasks = async () => {
-    try {
-      const response = await api.get('/task/open');
-      setTasks(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch tasks', error);
-    } finally {
-      setTasksLoading(false);
+  const runAIOrchestration = async () => {
+    if (!selectedTaskId) {
+      toast.error('Sector selection required for AI orchestration');
+      return;
     }
-  };
-
-  const triggerAI = async (taskId: string) => {
     setLoading(true);
-    setResults([]);
+    setShowResults(true);
+    setResults([]); 
     setSuggestions([]);
-    setShowResults(false);
-    setActiveTaskId(taskId);
+    
     try {
-      const response = await api.post('/assign/ai/auto-assign', { taskId });
-      const { assignments, suggestions } = response.data.data;
-      setResults(assignments || []);
-      setSuggestions(suggestions || []);
-      setShowResults(true);
-      toast.success('AI orchestration analysis complete');
-      fetchOpenTasks();
+      const response = await api.post(`/assign/ai/auto-assign`, { taskId: selectedTaskId });
+      
+      const { assignments = [], suggestions: aiSuggestions = [] } = response.data.data;
+      setResults(assignments);
+      setSuggestions(aiSuggestions);
+      
+      if (assignments.length === 0 && aiSuggestions.length === 0) {
+        toast.error('Zero high-probability matches identified in this sector.');
+      } else {
+        toast.success(`AI Link Established: ${assignments.length} units optimized, ${aiSuggestions.length} candidates found.`);
+      }
     } catch (error: any) {
-      toast.error(error.message || 'AI assignment failed');
+      toast.error(error.response?.data?.message || 'Neural Link Error: Orchestration failed');
+      setShowResults(false);
     } finally {
       setLoading(false);
     }
   };
 
-  const manualAssign = async (volunteerId: string) => {
-    if (!activeTaskId) return;
+  const handleRevoke = async (assignmentId: string) => {
     try {
-       await api.post('/assignVolunteer/assign', { taskId: activeTaskId, volunteerId });
-       toast.success('Volunteer manually assigned');
-
-       triggerAI(activeTaskId);
-    } catch (error: any) {
-       toast.error(error.message || 'Manual assignment failed');
+      await api.delete(`/assignVolunteer/${assignmentId}`);
+      setResults(prev => prev.filter(a => a._id !== assignmentId));
+      toast.success('Assignment Purged');
+    } catch (error) {
+      toast.error('Failed to purge assignment');
     }
   };
 
-  const handleRevokeAssignment = async (assignmentId: string) => {
-    if (!activeTaskId) return;
-    try {
-       await api.delete(`/assignVolunteer/${assignmentId}`);
-       toast.success('Assignment revoked');
-       triggerAI(activeTaskId);
-    } catch (error: any) {
-       toast.error('Failed to revoke assignment');
-    }
-  };
+  const selectedTask = tasks.find(t => t._id === selectedTaskId);
 
   return (
-    <div className="space-y-12 max-w-6xl mx-auto">
-      <div className="text-center space-y-4">
-        <div className="mx-auto w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-3xl flex items-center justify-center text-indigo-600 mb-6 shadow-lg shadow-indigo-500/10 scale-110">
-           <Shield size={40} />
+    <div className="space-y-10 max-w-6xl mx-auto pb-20">
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-zinc-200 dark:border-white/5"
+      >
+        <div className="space-y-2">
+           <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-1">
+              <Zap size={10} className="text-amber-500 fill-amber-500" />
+              AI Orchestration
+           </div>
+           <h1 className="text-4xl font-light tracking-tight text-zinc-900 dark:text-white leading-tight">
+              Unit <span className="font-semibold">Deployment</span>
+           </h1>
+           <p className="text-zinc-500 dark:text-zinc-400 text-sm font-light">
+              High-precision volunteer matching and resource allocation.
+           </p>
         </div>
-        <h1 className="text-4xl font-extrabold text-[#0f172a] dark:text-white">AI Deployment Control</h1>
-        <p className="text-slate-500 dark:text-slate-400 font-medium max-w-xl mx-auto">
-           Orchestrate emergency response by matching the best volunteers to critical missions.
-        </p>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
          {}
-         <div className="lg:col-span-1 space-y-6">
-            <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-               <ListChecks className="text-blue-600" />
-               Pending Missions
-            </h2>
-            
-            {tasksLoading ? (
-               <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800 rounded-3xl animate-pulse"></div>
-                  ))}
-               </div>
-            ) : tasks.length > 0 ? (
-               <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                  {tasks.map(task => (
-                    <div key={task._id} className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 group transition-all">
-                       <h3 className="font-bold text-slate-900 dark:text-white mb-1 truncate">{task.title}</h3>
-                       <div className="flex items-center gap-2 mb-3">
-                          <div className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/40 text-[10px] font-black text-blue-600 dark:text-blue-400 rounded-md uppercase tracking-wider">
-                             {(task.assignedCount || 0)} / {task.volunteersNeeded} Slots
+         <div className="space-y-6">
+            <div className="bg-white dark:bg-[#121212] rounded-2xl border border-zinc-200 dark:border-white/5 p-6 shadow-sm">
+               <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4 block">Select a Task</label>
+               <div className="space-y-3">
+                  {tasks.length > 0 ? tasks.map(task => (
+                    <button
+                      key={task._id}
+                      onClick={() => {setSelectedTaskId(task._id); setShowResults(false);}}
+                      className={clsx(
+                        "w-full p-4 rounded-xl text-left transition-all border group relative overflow-hidden",
+                        selectedTaskId === task._id 
+                          ? "bg-zinc-900 border-zinc-900 dark:bg-white dark:border-white" 
+                          : "bg-zinc-50 border-zinc-100 dark:bg-white/5 dark:border-transparent hover:border-zinc-300 dark:hover:border-white/20"
+                      )}
+                    >
+                       <div className="relative z-10">
+                          <p className={clsx(
+                            "text-xs font-bold leading-tight mb-1",
+                            selectedTaskId === task._id ? "text-white dark:text-black" : "text-zinc-900 dark:text-white"
+                          )}>{task.title}</p>
+                          <div className="flex items-center gap-3">
+                             <p className={clsx(
+                               "text-[9px] font-black uppercase tracking-widest",
+                               selectedTaskId === task._id ? "text-zinc-400" : "text-zinc-500"
+                             )}>{task.priority} Priority</p>
+                             <div className={clsx(
+                               "w-1 h-1 rounded-full",
+                               selectedTaskId === task._id ? "bg-zinc-400" : "bg-zinc-300"
+                             )} />
+                             <p className={clsx(
+                               "text-[9px] font-black uppercase tracking-widest",
+                               selectedTaskId === task._id ? "text-zinc-400" : "text-zinc-500"
+                             )}>{task.volunteersNeeded} units needed</p>
                           </div>
-                          {task.priority && (
-                             <div className="text-[10px] font-bold text-slate-400 uppercase">{task.priority} Priority</div>
-                          )}
                        </div>
-                       <p className="text-xs text-slate-500 mb-4 line-clamp-1">{task.description}</p>
-                       <button 
-                         disabled={loading}
-                         onClick={() => triggerAI(task._id)}
-                         className="w-full py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center gap-2"
-                       >
-                          <Play size={12} fill="currentColor" />
-                          Assign Now
-                       </button>
+                    </button>
+                  )) : (
+                    <div className="py-10 text-center border border-dashed border-zinc-200 dark:border-white/10 rounded-xl">
+                       <Shield size={24} className="mx-auto text-zinc-300 dark:text-zinc-800 mb-2" />
+                       <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">All tasks assigned</p>
                     </div>
-                  ))}
+                  )}
                </div>
-            ) : (
-               <div className="p-12 text-center bg-slate-50 dark:bg-slate-800 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-                  <p className="text-sm font-bold text-slate-400">All tasks fully assigned</p>
-               </div>
+            </div>
+
+            {selectedTask && (
+               <motion.div 
+                 initial={{ opacity: 0, scale: 0.95 }}
+                 animate={{ opacity: 1, scale: 1 }}
+                 className="bg-zinc-900 dark:bg-white p-8 rounded-3xl shadow-xl space-y-6 relative overflow-hidden"
+               >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 dark:bg-black/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                  <div className="space-y-1 relative z-10">
+                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">Ready for Intelligence Sweep</p>
+                     <h3 className="text-xl font-semibold text-white dark:text-black">{selectedTask.title}</h3>
+                  </div>
+                  <button 
+                    onClick={runAIOrchestration}
+                    disabled={loading}
+                    className="w-full py-4 bg-white dark:bg-black text-black dark:text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
+                  >
+                    {loading ? <Loader2 className="animate-spin" size={18} /> : <Play size={16} fill="currentColor" />}
+                    Initiate Neural Sweep
+                  </button>
+               </motion.div>
             )}
          </div>
 
          {}
          <div className="lg:col-span-2 space-y-8">
-            <div className="bg-white dark:bg-slate-900 rounded-[40px] border border-slate-200 dark:border-slate-800 p-8 shadow-sm relative overflow-hidden">
-               {!showResults && !loading && (
-                 <div className="py-20 text-center space-y-4">
-                    <Sparkles size={64} className="mx-auto text-indigo-500/20" />
-                    <p className="text-slate-400 font-bold">Select a mission to view AI matching candidates</p>
-                 </div>
-               )}
+            <div className="bg-white dark:bg-[#121212] rounded-2xl border border-zinc-200 dark:border-white/5 p-6 md:p-10 shadow-sm relative overflow-hidden min-h-[65vh]">
+               <div className="absolute top-0 right-0 w-96 h-96 bg-zinc-500/5 blur-3xl rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+               
+               <AnimatePresence mode="wait">
+                 {!showResults && !loading && (
+                   <motion.div 
+                     key="empty"
+                     initial={{ opacity: 0, scale: 0.95 }}
+                     animate={{ opacity: 1, scale: 1 }}
+                     exit={{ opacity: 0, scale: 0.95 }}
+                     className="py-40 text-center space-y-6 relative z-10"
+                   >
+                      <div className="w-20 h-20 bg-zinc-50 dark:bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-2 border border-zinc-100 dark:border-white/10">
+                        <Sparkles size={32} className="text-zinc-200 dark:text-zinc-700" />
+                      </div>
+                      <div className="space-y-1">
+                         <h3 className="text-lg font-semibold text-zinc-900 dark:text-white uppercase tracking-widest">Awaiting Sector Signal</h3>
+                         <p className="text-zinc-400 text-sm font-light">Select a strategic objective to begin AI personnel orchestration.</p>
+                      </div>
+                   </motion.div>
+                 )}
 
-               {loading && (
-                 <div className="py-20 text-center space-y-6">
-                    <div className="relative w-20 h-20 mx-auto">
-                       <Loader2 size={80} className="text-blue-600 animate-spin absolute inset-0" />
-                       <Sparkles size={32} className="text-indigo-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
-                    </div>
-                    <div>
-                       <h3 className="text-xl font-black text-slate-900 dark:text-white mb-1">AI Engine Analysis</h3>
-                       <p className="text-slate-500 text-sm">Evaluating skills, distance, and mission priority...</p>
-                    </div>
-                 </div>
-               )}
+                 {loading && (
+                   <motion.div 
+                     key="loading"
+                     initial={{ opacity: 0 }}
+                     animate={{ opacity: 1 }}
+                     exit={{ opacity: 0 }}
+                     className="py-40 text-center space-y-8 relative z-10"
+                   >
+                      <div className="relative w-24 h-24 mx-auto">
+                         <div className="absolute inset-0 border-4 border-zinc-100 dark:border-white/5 rounded-full" />
+                         <div className="absolute inset-0 border-4 border-t-zinc-900 dark:border-t-white rounded-full animate-spin" />
+                         <div className="absolute inset-4 border-2 border-zinc-100 dark:border-white/5 rounded-full" />
+                         <div className="absolute inset-4 border-2 border-b-zinc-400 dark:border-b-zinc-600 rounded-full animate-spin-reverse" />
+                      </div>
+                      <div className="space-y-2">
+                         <h3 className="text-xl font-bold text-zinc-900 dark:text-white animate-pulse">Running Neural Matching...</h3>
+                         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 italic">Accessing Responder Tactical Data</p>
+                      </div>
+                   </motion.div>
+                 )}
 
-               {showResults && !loading && (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-right-10 duration-500">
-                     <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-                           <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600">
-                              <Check size={20} />
-                           </div>
-                           Match Results
-                        </h2>
-                        <div className="px-4 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 text-xs font-black rounded-full uppercase tracking-widest">
-                           {results.length} Deployed • {suggestions.length} Suggested
-                        </div>
-                     </div>
-
-                     <div className="space-y-12">
-                       {results.filter(r => r.status === 'rejected').length > 0 && (
-                          <div className="space-y-4">
-                             <h3 className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em] border-l-2 border-rose-600 pl-3 flex items-center gap-2">
-                                <XOctagon size={12} />
-                                Deployment Failures (Rejected)
-                             </h3>
-                             <div className="grid grid-cols-1 gap-6">
-                                {results.filter(r => r.status === 'rejected').map((result) => (
-                                  <AIResultCard key={result._id} assignment={result} onRevoke={handleRevokeAssignment} />
-                                ))}
-                             </div>
+                 {showResults && !loading && (
+                    <motion.div 
+                      key="results"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="space-y-8 relative z-10"
+                    >
+                       <div className="flex items-center justify-between border-b border-zinc-100 dark:border-white/5 pb-6">
+                          <div>
+                             <h3 className="text-xl font-semibold text-zinc-900 dark:text-white">AI Optimization Results</h3>
+                             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mt-1">Found {results.length} high-probability response unit matches</p>
                           </div>
-                       )}
-
-                       {results.filter(r => r.status !== 'rejected' && !(r as any).isTooFar).length > 0 && (
-                          <div className="space-y-4">
-                             <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] border-l-2 border-emerald-500 pl-3 flex items-center gap-2">
-                                <Check size={12} />
-                                Nearby Deployment
-                             </h3>
-                             <div className="grid grid-cols-1 gap-6">
-                                {results.filter(r => r.status !== 'rejected' && !(r as any).isTooFar).map((result) => (
-                                  <AIResultCard key={result._id} assignment={result} onRevoke={handleRevokeAssignment} />
-                                ))}
-                             </div>
+                          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                             Precise Match
                           </div>
-                       )}
+                       </div>
 
-                       {results.filter(r => r.status !== 'rejected' && (r as any).isTooFar).length > 0 && (
-                          <div className="space-y-4">
-                             <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] border-l-2 border-rose-500 pl-3 flex items-center gap-2">
-                                <AlertCircle size={12} />
-                                Extended Deployment
-                             </h3>
-                             <div className="grid grid-cols-1 gap-6">
-                                {results.filter(r => r.status !== 'rejected' && (r as any).isTooFar).map((result) => (
-                                  <AIResultCard key={result._id} assignment={result} onRevoke={handleRevokeAssignment} />
-                                ))}
-                             </div>
-                          </div>
-                       )}
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          {results.map((assignment, i) => (
+                            <AIResultCard 
+                              key={assignment._id}
+                              assignment={assignment}
+                              onRevoke={handleRevoke}
+                              index={i}
+                            />
+                          ))}
+                       </div>
 
                        {suggestions.length > 0 && (
-                          <div className="space-y-4">
-                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-l-2 border-blue-500 pl-3 flex items-center gap-2">
-                                <Sparkles size={12} className="text-blue-500" />
-                                Untapped Potential (Suggested)
-                             </h3>
-                             <div className="grid grid-cols-1 gap-6">
-                                {suggestions.map((s) => (
-                                  <SuggestionCard key={s.volunteer._id} suggestion={s} onAssign={manualAssign} />
+                          <div className="space-y-8 pt-10 mt-10 border-t border-zinc-100 dark:border-white/5">
+                             <div>
+                                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white">Other Available Volunteers</h3>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mt-1">Volunteers who match skills but are further away</p>
+                             </div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                {suggestions.map((suggestion, i) => (
+                                   <SuggestionCard 
+                                     key={suggestion.volunteer._id}
+                                     suggestion={suggestion}
+                                     index={i}
+                                     taskId={selectedTaskId}
+                                     onAssign={() => runAIOrchestration()}
+                                   />
                                 ))}
                              </div>
                           </div>
                        )}
 
                        {results.length === 0 && suggestions.length === 0 && (
-                          <div className="p-12 text-center bg-slate-50 dark:bg-slate-800 rounded-3xl">
-                            <AlertCircle className="mx-auto text-rose-500 mb-4" />
-                            <p className="text-slate-500 font-bold">No matching volunteers found for this mission.</p>
+                          <div className="py-20 text-center bg-zinc-50 dark:bg-white/[0.01] rounded-3xl border border-dashed border-zinc-200 dark:border-white/10">
+                             <AlertCircle size={32} className="mx-auto text-rose-500 mb-4" />
+                             <h4 className="text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-widest">Tactical Mismatch</h4>
+                             <p className="text-xs text-zinc-400 mt-1 font-light italic">No responders currently meet the sector skill criteria.</p>
                           </div>
                        )}
-                     </div>
-                  </div>
-               )}
+                    </motion.div>
+                 )}
+               </AnimatePresence>
             </div>
          </div>
       </div>
@@ -241,145 +270,167 @@ const AdminAssignmentPage: React.FC = () => {
   );
 };
 
-const AIResultCard: React.FC<{assignment: Assignment; onRevoke: (aid: string) => void}> = ({ assignment, onRevoke }) => {
+const AIResultCard: React.FC<{assignment: Assignment; onRevoke: (aid: string) => void, index: number}> = ({ assignment, onRevoke, index }) => {
   const volunteer = assignment.volunteer as any;
   const isTooFar = (assignment as any).isTooFar;
   const isRejected = assignment.status === 'rejected';
 
   return (
-    <div className={clsx(
-      "bg-white dark:bg-slate-900 rounded-3xl border-2 p-6 transition-all relative overflow-hidden group shadow-md",
-      isRejected ? "border-rose-500/50 bg-rose-50/5 dark:bg-rose-900/5" : 
-      isTooFar ? "border-rose-100 dark:border-rose-900/20" : "border-slate-100 dark:border-slate-800"
-    )}>
-       <div className={clsx(
-         "absolute top-0 right-0 px-4 py-1.5 text-white text-[10px] uppercase font-black rounded-bl-2xl flex items-center gap-1",
-         isRejected ? "bg-rose-600" :
-         isTooFar ? "bg-rose-500" : "bg-emerald-500"
-       )}>
-          {isRejected && <XOctagon size={10} />}
-          {isRejected ? "Mission Declined" : isTooFar ? "Extended Range" : "Auto-Deployed"}
-       </div>
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className={clsx(
+        "group p-6 rounded-2xl border transition-all flex flex-col gap-5",
+        isRejected ? "bg-rose-50/50 dark:bg-rose-950/10 border-rose-100 dark:border-rose-900/20 grayscale" : "bg-white dark:bg-[#181818] border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:border-white/10 shadow-sm"
+      )}
+    >
+      <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-zinc-100 dark:bg-white/5 rounded-full flex items-center justify-center text-zinc-400 dark:text-zinc-500 text-sm font-bold border border-zinc-200 dark:border-white/10">
+               {volunteer?.name?.[0] || 'U'}
+            </div>
+            <div>
+               <h4 className="text-sm font-bold text-zinc-900 dark:text-white leading-none mb-1">{volunteer?.name || 'Unknown Unit'}</h4>
+               <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 leading-none">{volunteer?.email || 'Signal lost'}</p>
+            </div>
+         </div>
+         <button 
+           onClick={() => onRevoke(assignment._id)}
+           className="p-2 text-zinc-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+         >
+            <Trash2 size={16} />
+         </button>
+      </div>
 
-       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-             <div className="relative">
-                <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-200 dark:border-slate-700">
-                   <UserIcon size={28} />
-                </div>
-                {isRejected && (
-                   <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-white">
-                      <AlertCircle size={12} />
-                   </div>
-                )}
-             </div>
-             <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                   {volunteer?.name || 'Assigned Volunteer'}
-                </h3>
-                <div className="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 leading-tight">
-                  {volunteer?.address || 'Deployment Base: Active'}
-                </div>
-                <div className="flex items-center gap-4 mt-1">
-                   <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold uppercase tracking-wider">
-                      <Sparkles size={14} className="text-indigo-400" />
-                      {((assignment.aiScore || 0) * 100).toFixed(0)}% Match
-                   </div>
-                    <div className={clsx(
-                      "flex items-center gap-1.5 text-[10px] font-bold uppercase px-2 py-0.5 rounded-md",
-                      isTooFar || isRejected ? "text-rose-600 bg-rose-50 dark:bg-rose-900/20" : "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
-                    )}>
-                       {(assignment as any).distance ? `${(assignment as any).distance} km away` : "Nearby"}
-                    </div>
-                </div>
-             </div>
-          </div>
+      <div className="space-y-4">
+         <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Tactical Match Prob.</span>
+            <span className="text-xs font-black text-emerald-500">{(assignment.aiScore * 100).toFixed(0)}%</span>
+         </div>
+         <div className="h-1 bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden">
+            <motion.div 
+               initial={{ width: 0 }}
+               animate={{ width: `${assignment.aiScore * 100}%` }}
+               transition={{ duration: 1, delay: 0.5 }}
+               className="h-full bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
+            />
+         </div>
+      </div>
 
-          <div className="flex items-center gap-6">
-             <div className="flex-1 max-w-sm hidden lg:block">
-                <div className={clsx(
-                   "p-4 rounded-2xl border",
-                   isRejected ? "bg-rose-50/50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-910" : "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700"
-                )}>
-                   <p className="text-sm text-slate-600 dark:text-slate-300 leading-tight italic font-medium">
-                      "{assignment.aiReason}"
-                   </p>
-                </div>
-             </div>
-             
-             <button 
-               onClick={() => onRevoke(assignment._id)}
-               className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-2xl transition-all"
-               title={isRejected ? "Remove Selection" : "Revoke Assignment"}
-             >
-                <Trash2 size={20} />
-             </button>
-          </div>
-       </div>
+      <div className="flex flex-wrap gap-1.5">
+         {volunteer.skills?.map((s: string) => (
+           <span key={s} className="px-2 py-0.5 bg-zinc-50 dark:bg-white/5 border border-zinc-100 dark:border-white/10 rounded text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
+              {s}
+           </span>
+         ))}
+      </div>
 
-       {isRejected && (
-          <div className="mt-4 flex items-center gap-2 text-rose-500 text-[10px] font-black uppercase tracking-widest bg-rose-50 dark:bg-rose-900/20 px-3 py-1.5 rounded-xl w-fit">
-             <AlertCircle size={14} />
-             Volunteer unavailable for this specific mission
-          </div>
-       )}
-    </div>
+      <div className="pt-4 border-t border-zinc-100 dark:border-white/5 flex items-center justify-between text-[10px] font-black uppercase tracking-[0.1em]">
+         <div className="flex items-center gap-1.5 text-zinc-400">
+            <MapPin size={12} />
+            {isTooFar ? "> 50km" : "< 15km"} Range
+         </div>
+         <div className={clsx(
+           "flex items-center gap-1.5",
+           assignment.status === 'accepted' ? "text-emerald-500" : "text-amber-500"
+         )}>
+            <div className={clsx("w-1.5 h-1.5 rounded-full", assignment.status === 'accepted' ? "bg-emerald-500" : "bg-amber-500")} />
+            {assignment.status}
+         </div>
+      </div>
+    </motion.div>
   );
 };
 
-const SuggestionCard: React.FC<{suggestion: any; onAssign: (vid: string) => void}> = ({ suggestion, onAssign }) => {
+const SuggestionCard: React.FC<{suggestion: any; index: number, taskId: string, onAssign: () => void}> = ({ suggestion, index, taskId, onAssign }) => {
   const volunteer = suggestion.volunteer;
   const isTooFar = suggestion.isTooFar;
+  const [loading, setLoading] = useState(false);
+
+  const handleManualAssign = async () => {
+    setLoading(true);
+    try {
+      await api.post('/assignVolunteer/assign', { 
+        taskId, 
+        volunteerId: volunteer._id 
+      });
+      toast.success('Personnel manually drafted');
+      onAssign();
+    } catch (error: any) {
+      toast.error(error.message || 'Drafting failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-slate-100 dark:border-slate-800 p-6 transition-all relative overflow-hidden group hover:border-amber-500/50">
-       <div className={clsx(
-         "absolute top-0 right-0 px-4 py-1.5 text-white text-[10px] uppercase font-black rounded-bl-2xl",
-         isTooFar ? "bg-rose-500" : "bg-amber-500"
-       )}>
-          {isTooFar ? "Too Far" : "Suggested"}
-       </div>
-
-       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-             <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400">
-                <UserIcon size={28} />
-             </div>
-             <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">{volunteer.name}</h3>
-                <div className="flex items-center gap-4 mt-1">
-                   <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold uppercase tracking-wider">
-                      <Sparkles size={14} className="text-indigo-400" />
-                      {((suggestion.aiScore || 0) * 100).toFixed(0)}% Match
-                   </div>
-                   <div className={clsx(
-                     "flex items-center gap-1.5 text-[10px] font-bold uppercase px-2 py-0.5 rounded-md",
-                     isTooFar ? "text-rose-600 bg-rose-50 dark:bg-rose-900/20" : "text-amber-600 bg-amber-50"
-                   )}>
-                      {suggestion.distance} km away
-                   </div>
-                </div>
-             </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center gap-4">
-             <p className="text-xs text-slate-400 italic max-w-xs">{suggestion.aiReason}</p>
-             <button 
-               onClick={() => onAssign(volunteer._id)}
-               className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-600/10"
-             >
-                Assign Manually
-             </button>
-          </div>
-       </div>
-
-       {isTooFar && (
-         <div className="mt-4 flex items-center gap-2 text-rose-500 text-[10px] font-black uppercase tracking-widest pl-1">
-            <AlertCircle size={14} />
-            Distance warning: deployment exceeds 10km radius
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="group p-6 rounded-2xl border bg-zinc-50 dark:bg-white/[0.01] border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:border-white/10 shadow-sm flex flex-col gap-5"
+    >
+      <div className="flex items-center justify-between">
+         <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-zinc-200 dark:bg-white/5 rounded-full flex items-center justify-center text-zinc-500 dark:text-zinc-500 text-sm font-bold border border-zinc-200 dark:border-white/10">
+               {volunteer.name?.[0]}
+            </div>
+            <div>
+               <h4 className="text-sm font-bold text-zinc-900 dark:text-white leading-none mb-1">{volunteer.name}</h4>
+               <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 leading-none">{volunteer.email}</p>
+            </div>
          </div>
-       )}
-    </div>
+         <button 
+           onClick={handleManualAssign}
+           disabled={loading}
+           className="px-3 py-1.5 bg-zinc-900 dark:bg-white text-white dark:text-black text-[9px] font-black uppercase tracking-widest rounded-lg hover:opacity-80 transition-all disabled:opacity-50"
+         >
+            {loading ? <Loader2 size={12} className="animate-spin" /> : "Assign Volunteer"}
+         </button>
+      </div>
+
+      <div className="space-y-4">
+         <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Match Accuracy</span>
+            <span className="text-xs font-black text-amber-500">{(suggestion.aiScore * 100).toFixed(0)}%</span>
+         </div>
+         <div className="h-1 bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden">
+            <motion.div 
+               initial={{ width: 0 }}
+               animate={{ width: `${suggestion.aiScore * 100}%` }}
+               transition={{ duration: 1, delay: 0.5 }}
+               className="h-full bg-amber-500 rounded-full" 
+            />
+         </div>
+         <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-light italic leading-tight">
+            "{suggestion.aiReason}"
+         </p>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+         {volunteer.skills?.map((s: string) => (
+           <span key={s} className="px-2 py-0.5 bg-zinc-100 dark:bg-white/10 border border-transparent rounded text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
+              {s}
+           </span>
+         ))}
+      </div>
+
+      <div className="pt-4 border-t border-zinc-100 dark:border-white/5 flex items-center justify-between text-[10px] font-black uppercase tracking-[0.1em]">
+         <div className="flex items-center gap-1.5 text-zinc-400">
+            <MapPin size={12} />
+            <span className={clsx(
+              suggestion.distance > 100 ? "text-rose-500" : 
+              suggestion.distance > 20 ? "text-amber-500" : "text-emerald-500"
+            )}>
+              {suggestion.distance}km Distance
+            </span>
+         </div>
+         <div className="text-zinc-500 opacity-60">
+            Global Match
+         </div>
+      </div>
+    </motion.div>
   );
 };
 

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -30,55 +31,60 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom-5 duration-500">
-        <div className="px-8 pt-8 pb-6 text-center">
-          <div className="mx-auto w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-4">
-            <span className="text-white font-bold text-2xl">V</span>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-50 dark:bg-[#0a0a0a] transition-colors duration-300 font-sans">
+      <motion.div 
+         initial={{ opacity: 0, y: 20 }}
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+         className="w-full max-w-[400px] bg-white dark:bg-[#121212] rounded-2xl shadow-sm border border-zinc-200 dark:border-white/5 overflow-hidden"
+      >
+        <div className="px-8 pt-10 pb-6 text-center">
+          <div className="mx-auto w-12 h-12 bg-zinc-900 dark:bg-white rounded-xl flex items-center justify-center mb-6 shadow-sm border border-white/10">
+            <span className="text-white dark:text-black font-bold text-xl">V</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-4">Login</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2">Access your volunteer dashboard</p>
+          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-white tracking-tight">Welcome back</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm">Enter your details to access your dashboard</p>
         </div>
 
-        <form onSubmit={handleLogin} className="px-8 pb-8 space-y-6">
+        <form onSubmit={handleLogin} className="px-8 pb-10 space-y-5">
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Email Address</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Mail size={20} />
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-widest pl-1">Email Address</label>
+              <div className="relative group">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors">
+                  <Mail size={16} />
                 </span>
                 <input 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white focus:border-zinc-900 dark:focus:border-white transition-all outline-none dark:text-white placeholder:text-zinc-400 text-sm"
                   placeholder="name@example.com"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Password</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Lock size={20} />
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-widest pl-1">Password</label>
+              <div className="relative group">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors">
+                  <Lock size={16} />
                 </span>
                 <input 
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full pl-10 pr-12 py-3 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white focus:border-zinc-900 dark:focus:border-white transition-all outline-none dark:text-white placeholder:text-zinc-400 text-sm"
                   placeholder="••••••••"
                   required
                 />
                 <button 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-colors"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
@@ -87,20 +93,20 @@ const LoginPage: React.FC = () => {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
+            className="w-full py-3.5 mt-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 text-white text-sm font-semibold rounded-xl shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2"
           >
-            {loading && <Loader2 className="animate-spin" size={20} />}
+            {loading && <Loader2 className="animate-spin" size={16} />}
             Sign In
           </button>
 
-          <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-center text-sm text-zinc-500 pt-2">
             Don't have an account?{' '}
-            <Link to="/register" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
+            <Link to="/register" className="text-zinc-900 dark:text-white font-semibold hover:underline">
               Create an account
             </Link>
           </p>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { User, Mail, Lock, UserPlus, MapPin, Check, Loader2, RefreshCw } from 'lucide-react';
 import { clsx } from 'clsx';
+import { motion } from 'framer-motion';
 
 const AVAILABLE_SKILLS = [
   "Medical", "Logistics", "First Aid", "Search & Rescue", 
@@ -104,78 +105,83 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen py-12 px-4 bg-slate-50 dark:bg-slate-950 transition-colors duration-300 flex items-center justify-center">
-      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-500">
-        <div className="px-8 pt-8 pb-4 text-center border-b border-slate-100 dark:border-slate-800">
-          <div className="mx-auto w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-4">
-            <UserPlus className="text-white" size={24} />
+    <div className="min-h-screen py-12 px-4 bg-zinc-50 dark:bg-[#0a0a0a] transition-colors duration-300 flex items-center justify-center font-sans">
+      <motion.div 
+         initial={{ opacity: 0, y: 20 }}
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+         className="w-full max-w-2xl bg-white dark:bg-[#121212] rounded-2xl shadow-sm overflow-hidden border border-zinc-200 dark:border-white/10"
+      >
+        <div className="px-8 pt-8 pb-4 text-center border-b border-zinc-100 dark:border-white/5">
+          <div className="mx-auto w-12 h-12 bg-zinc-900 dark:bg-white rounded-xl flex items-center justify-center mb-5 shadow-sm border border-white/10">
+            <UserPlus className="text-white dark:text-black" size={20} />
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Join the Network</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2">Become a vital part of emergency response</p>
+          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-white tracking-tight">Join the Network</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1.5 text-sm">Create an account to become a vital part of emergency response</p>
         </div>
 
         <form onSubmit={handleRegister} className="p-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {}
             <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Basic Information</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-2">Basic Information</h3>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 tracking-wide pl-1">Full Name</label>
+                <div className="relative group">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" size={16} />
                   <input 
                     type="text" 
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="Aditya Kumar"
-                    className="w-full pl-10 py-2.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                    className="w-full pl-9 py-2.5 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white focus:border-zinc-900 dark:focus:border-white outline-none transition-all dark:text-white placeholder:text-zinc-400 text-sm"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 tracking-wide pl-1">Email Address</label>
+                <div className="relative group">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" size={16} />
                   <input 
                     type="email" 
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     placeholder="name@example.com"
-                    className="w-full pl-10 py-2.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                    className="w-full pl-9 py-2.5 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white focus:border-zinc-900 dark:focus:border-white outline-none transition-all dark:text-white placeholder:text-zinc-400 text-sm"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 tracking-wide pl-1">Password</label>
+                <div className="relative group">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" size={16} />
                   <input 
                     type="password" 
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                     placeholder="••••••••"
-                    className="w-full pl-10 py-2.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                    className="w-full pl-9 py-2.5 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white focus:border-zinc-900 dark:focus:border-white outline-none transition-all dark:text-white placeholder:text-zinc-400 text-sm"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Confirm Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 tracking-wide pl-1">Confirm Password</label>
+                <div className="relative group">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" size={16} />
                   <input 
                     type="password" 
                     required
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                     placeholder="••••••••"
-                    className="w-full pl-10 py-2.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                    className="w-full pl-9 py-2.5 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white focus:border-zinc-900 dark:focus:border-white outline-none transition-all dark:text-white placeholder:text-zinc-400 text-sm"
                   />
                 </div>
               </div>
@@ -183,10 +189,10 @@ const RegisterPage: React.FC = () => {
 
             {}
             <div className="space-y-4">
-               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Skills & Location</h3>
+               <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-2">Skills & Location</h3>
 
-               <div className="space-y-2 text-left">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200 block mb-2">Skills (Select multiple)</label>
+               <div className="space-y-1.5 text-left">
+                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 tracking-wide pl-1 block">Skills (Select multiple)</label>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {AVAILABLE_SKILLS.map(skill => {
                       const isSelected = selectedSkills.includes(skill);
@@ -196,13 +202,13 @@ const RegisterPage: React.FC = () => {
                           type="button"
                           onClick={() => toggleSkill(skill)}
                           className={clsx(
-                            "px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 border-2",
+                            "px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 border border-zinc-200 dark:border-white/10",
                             isSelected 
-                              ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20" 
-                              : "bg-slate-50 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-400 hover:border-slate-200"
+                              ? "bg-zinc-900 border-zinc-900 text-white dark:bg-white dark:border-white dark:text-black" 
+                              : "bg-zinc-50 dark:bg-[#0a0a0a] text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-white/30"
                           )}
                         >
-                          {isSelected && <Check size={12} />}
+                          {isSelected && <Check size={10} />}
                           {skill}
                         </button>
                       );
@@ -210,16 +216,16 @@ const RegisterPage: React.FC = () => {
                   </div>
                </div>
 
-               <div className="space-y-4 pt-2">
-                  <div className="flex flex-col gap-3">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Tactical Station Location</label>
+               <div className="space-y-4 pt-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 tracking-wide pl-1">Station Address</label>
                     <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                      <div className="relative flex-1 group">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" size={16} />
                         <input 
                           type="text"
-                          placeholder="Search your city/area..."
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white"
+                          placeholder="Search area..."
+                          className="w-full pl-9 pr-4 py-2 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white focus:border-zinc-900 dark:focus:border-white outline-none transition-all dark:text-white placeholder:text-zinc-400 text-sm"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -251,16 +257,16 @@ const RegisterPage: React.FC = () => {
                         type="button" 
                         disabled={isLocating}
                         onClick={getCurrentLocation}
-                        className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl border-2 border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                        className="p-2.5 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 rounded-lg border border-zinc-200 dark:border-white/10 hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
                         title="Use my current GPS"
                       >
-                        {isLocating ? <Loader2 className="animate-spin" size={20} /> : <RefreshCw size={20} />}
+                        {isLocating ? <Loader2 className="animate-spin" size={18} /> : <RefreshCw size={18} />}
                       </button>
                     </div>
                   </div>
-                  <div className="pt-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Identified Address</p>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-transparent text-sm dark:text-white font-medium min-h-[60px]">
+                  <div className="pt-1">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 mb-1.5 pl-1">Identified Address</p>
+                    <div className="p-3 bg-zinc-50 dark:bg-[#0a0a0a] rounded-lg border border-zinc-200 dark:border-white/5 text-xs text-zinc-600 dark:text-zinc-400 font-medium min-h-[50px] leading-relaxed">
                       {formData.address || 'Search above or use GPS detect...'}
                     </div>
                   </div>
@@ -268,24 +274,24 @@ const RegisterPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-4 space-y-4">
+          <div className="pt-6 border-t border-zinc-100 dark:border-white/5 space-y-4">
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:bg-slate-400"
+              className="w-full py-3.5 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-black text-white text-sm font-semibold rounded-lg shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <UserPlus size={20} />}
-              Create Account
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <UserPlus size={16} />}
+              Create Dedicated Account
             </button>
-            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400">
               Already a member?{' '}
-              <Link to="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
-                Login now
+              <Link to="/login" className="text-zinc-900 dark:text-white hover:underline transition-colors">
+                Secure Login Dashboard
               </Link>
             </p>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };

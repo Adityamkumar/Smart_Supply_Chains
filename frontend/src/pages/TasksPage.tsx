@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import api from '../services/api';
-import type { Task, TaskPriority, TaskStatus, Assignment, User } from '../types';
+import type { Task, TaskPriority, TaskStatus, Assignment } from '../types';
 import TaskCard from '../components/TaskCard';
-import { Search, SlidersHorizontal, Plus, Loader2, X, MapPin, Shield, Trash2, Info, User as UserIcon, CheckCircle, Clock, AlertTriangle, RefreshCw, XCircle } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, Loader2, X, MapPin, Shield, Info, User as UserIcon, CheckCircle, Clock, XCircle, Trash2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const TasksPage: React.FC = () => {
   const [search, setSearch] = useState('');
@@ -19,273 +20,193 @@ const TasksPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const { data: tasks = [], isLoading, isError, error, refetch } = useQuery<Task[]>({
+  const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ['tasks', user?.role],
     queryFn: async () => {
-      const endpoint = user?.role === 'admin' ? '/task/all' : '/task/open';
-      const response = await api.get(endpoint);
+      const response = await api.get('/task/all');
       return response.data.data;
-    },
-    enabled: !!user?.role,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (taskId: string) => api.delete(`/task/${taskId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Task deleted successfully');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete task');
     }
   });
-
-  const handleDeleteTask = (taskId: string) => {
-    if (window.confirm('Are you sure you want to delete this task? All associated assignments will be removed.')) {
-      deleteMutation.mutate(taskId);
-    }
-  };
 
   const filteredTasks = tasks.filter(task => {
-
-    const getDerivedStatus = (t: Task) => {
-      if (t.status === 'completed') return 'completed';
-      const count = t.assignedCount || 0;
-      if (count === 0) return 'open';
-      if (count >= t.volunteersNeeded) return 'in-progress';
-      return 'open';
-    };
-
-    const currentStatus = getDerivedStatus(task);
-
     const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase()) || 
                          task.description.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || currentStatus === statusFilter;
+    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="space-y-8 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-zinc-200 dark:border-white/5">
         <div className="space-y-1">
-          <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-2">
-            Available Missions
+          <h1 className="text-3xl font-light tracking-tight text-zinc-900 dark:text-white leading-tight">
+             All <span className="font-semibold">Tasks</span>
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium">
-            Explore emergency tasks and support the coordination efforts.
+          <p className="text-zinc-500 dark:text-zinc-400 text-sm font-light">
+             View and manage all help requests and missions.
           </p>
         </div>
-        
+
         {isAdmin && (
-           <button 
-             onClick={() => setShowCreateModal(true)}
-             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center gap-2"
-           >
-              <Plus size={20} />
-              Create Task
-           </button>
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-100 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl active:scale-95"
+          >
+            <Plus size={16} />
+            Add New Task
+          </button>
         )}
       </div>
 
-      {}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row gap-6 items-center">
+      <div className="flex flex-col lg:flex-row gap-4 items-center">
         <div className="relative flex-1 w-full">
-           <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-           <input 
-             type="text" 
-             value={search}
-             onChange={(e) => setSearch(e.target.value)}
-             placeholder="Search tasks, descriptions..."
-             className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all dark:text-white"
-           />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search for tasks..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-[#121212] border border-zinc-200 dark:border-white/5 rounded-2xl outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white transition-all text-sm font-light dark:text-zinc-100"
+          />
         </div>
-
-        <div className="flex flex-wrap gap-4 items-center w-full md:w-auto">
-           <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800">
-              <button 
-                onClick={() => setStatusFilter('all')}
-                className={clsx("px-4 py-2 text-xs font-bold rounded-xl transition-all", statusFilter === 'all' ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-white")}
+        
+        <div className="flex items-center gap-3 w-full lg:w-auto">
+          <div className="flex items-center gap-2 bg-zinc-100 dark:bg-[#121212] p-1 rounded-xl border border-zinc-200 dark:border-white/10 overflow-x-auto custom-scrollbar">
+            {['all', 'open', 'in-progress', 'completed'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status as any)}
+                className={clsx(
+                  "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap",
+                  statusFilter === status 
+                    ? "bg-white dark:bg-white/10 text-zinc-950 dark:text-white shadow-sm" 
+                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                )}
               >
-                ALL
+                {status}
               </button>
-              <button 
-                onClick={() => setStatusFilter('open')}
-                className={clsx("px-4 py-2 text-xs font-bold rounded-xl transition-all", statusFilter === 'open' ? "bg-white dark:bg-slate-700 text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-white")}
-              >
-                OPEN
-              </button>
-              <button 
-                onClick={() => setStatusFilter('in-progress')}
-                className={clsx("px-4 py-2 text-xs font-bold rounded-xl transition-all", statusFilter === 'in-progress' ? "bg-white dark:bg-slate-700 text-amber-600 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-white")}
-              >
-                IN-PROGRESS
-              </button>
-              <button 
-                onClick={() => setStatusFilter('completed')}
-                className={clsx("px-4 py-2 text-xs font-bold rounded-xl transition-all", statusFilter === 'completed' ? "bg-white dark:bg-slate-700 text-slate-400 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-white")}
-              >
-                COMPLETED
-              </button>
-           </div>
-
-           <select 
-             value={priorityFilter}
-             onChange={(e) => setPriorityFilter(e.target.value as any)}
-             className="px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none text-sm font-bold text-slate-700 dark:text-slate-200 appearance-none"
-           >
-              <option value="all">ANY PRIORITY</option>
-              <option value="high">HIGH PRIORITY</option>
-              <option value="medium">MEDIUM PRIORITY</option>
-              <option value="low">LOW PRIORITY</option>
-           </select>
+            ))}
+          </div>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-           {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-slate-900 h-80 rounded-3xl border border-slate-200 dark:border-slate-800 animate-pulse overflow-hidden">
-                 <div className="h-40 bg-slate-100 dark:bg-slate-800 m-6 rounded-2xl"></div>
-                 <div className="h-6 bg-slate-100 dark:bg-slate-800 mx-6 w-2/3 rounded-lg mb-4"></div>
-                 <div className="h-4 bg-slate-100 dark:bg-slate-800 mx-6 rounded-lg"></div>
-              </div>
-           ))}
-        </div>
-      ) : isError ? (
-        <div className="py-24 text-center bg-rose-50/50 dark:bg-rose-900/10 rounded-3xl border border-dashed border-rose-300 dark:border-rose-700">
-           <div className="w-16 h-16 bg-rose-100 dark:bg-rose-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="text-rose-500" size={32} />
-           </div>
-           <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Sync Error Detected</h3>
-           <p className="text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
-             {(error as any)?.message || "Failed to establish a secure connection with the mission database."}
-           </p>
-           <button 
-             onClick={() => refetch()}
-             className="mt-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center gap-2 mx-auto"
-           >
-             <RefreshCw size={16} />
-             Re-sync Roster
-           </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-64 bg-zinc-50 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-2xl animate-pulse" />
+          ))}
         </div>
       ) : filteredTasks.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-           {filteredTasks.map(task => (
-             <div key={task._id} className="relative group">
-                {isAdmin && (
-                  <button 
-                    onClick={() => handleDeleteTask(task._id)}
-                    className="absolute top-4 right-4 z-10 p-2 bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all opacity-0 group-hover:opacity-100 backdrop-blur-md border border-white/20"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <AnimatePresence>
+            {filteredTasks.map((task, index) => (
+              <motion.div
+                key={task._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ delay: index * 0.05 }}
+              >
                 <TaskCard 
                   task={task} 
-                  onViewDetails={(t) => setSelectedTask(t)}
+                  onViewDetails={() => setSelectedTask(task)}
                 />
-             </div>
-           ))}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       ) : (
-        <div className="py-24 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
-           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <SlidersHorizontal className="text-slate-400" size={32} />
-           </div>
-           <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No tasks found</h3>
-           <p className="text-slate-500 dark:text-slate-400">Try adjusting your filters or search terms.</p>
-           <button 
-             onClick={() => {setSearch(''); setStatusFilter('all'); setPriorityFilter('all')}}
-             className="text-blue-600 dark:text-blue-400 font-bold mt-4 hover:underline"
-           >
-             Clear all filters
-           </button>
+        <div className="py-32 text-center bg-zinc-50 dark:bg-[#121212] rounded-3xl border border-dashed border-zinc-200 dark:border-white/5">
+          <Info className="mx-auto text-zinc-300 dark:text-zinc-700 mb-4" size={40} />
+          <h3 className="text-lg font-light text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">No Active Missions</h3>
+          <p className="text-zinc-400 mt-2 text-sm font-light">All tactical sectors reporting clear status.</p>
         </div>
       )}
 
-      {showCreateModal && (
-         <CreateTaskModal onClose={() => setShowCreateModal(false)} />
-      )}
-
-      {selectedTask && (
-         <TaskDetailsModal task={selectedTask} onClose={() => setSelectedTask(null)} />
-      )}
+      <AnimatePresence>
+        {showCreateModal && (
+          <CreateTaskModal onClose={() => setShowCreateModal(false)} />
+        )}
+        {selectedTask && (
+          <TaskDetailsModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    requiredSkills: [] as string[],
-    volunteersNeeded: 1,
-    priority: 'medium' as TaskPriority,
-    lat: 0,
-    lng: 0,
-    address: ''
-  });
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [searchLocation, setSearchLocation] = useState('');
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    volunteersNeeded: 1,
+    priority: 'medium' as TaskPriority,
+    requiredSkills: [] as string[],
+    address: '',
+    coordinates: [0, 0] as [number, number]
+  });
 
-  const AVAILABLE_SKILLS = ["Medical", "Logistics", "First Aid", "Search & Rescue", "Food Distribution", "Translation", "Counseling", "Technical Support"];
+  const AVAILABLE_SKILLS = ["Medical", "Rescue", "Logistics", "Food", "Shelter", "Translation", "Driving"];
 
   const toggleSkill = (skill: string) => {
-    setFormData(prev => ({
-      ...prev,
-      requiredSkills: prev.requiredSkills.includes(skill) 
-        ? prev.requiredSkills.filter(s => s !== skill) 
-        : [...prev.requiredSkills, skill]
-    }));
-  };
-
-  const getCurrentLocation = () => {
-    if ("geolocation" in navigator) {
-      setIsLocating(true);
-      navigator.geolocation.getCurrentPosition(async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
-          const data = await res.json();
-          setFormData(prev => ({
-            ...prev,
-            lat: latitude,
-            lng: longitude,
-            address: data.display_name
-          }));
-        } catch (error) {
-          setFormData(prev => ({ ...prev, lat: latitude, lng: longitude, address: `${latitude}, ${longitude}` }));
-        } finally {
-          setIsLocating(false);
-        }
-      }, () => {
-        toast.error("Geolocation failed");
-        setIsLocating(false);
-      });
+    if (formData.requiredSkills.includes(skill)) {
+      setFormData({...formData, requiredSkills: formData.requiredSkills.filter(s => s !== skill)});
+    } else {
+      setFormData({...formData, requiredSkills: [...formData.requiredSkills, skill]});
     }
   };
 
+  const getCurrentLocation = () => {
+    setIsLocating(true);
+    if (!navigator.geolocation) {
+      toast.error('Geolocation not supported');
+      setIsLocating(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const response = await api.get(`/location/reverse-geocode?lat=${latitude}&lng=${longitude}`);
+          setFormData({
+            ...formData,
+            address: response.data.data.address,
+            coordinates: [longitude, latitude]
+          });
+          toast.success('Location synchronized');
+        } catch (err) {
+          toast.error('Failed to geocode location');
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      () => {
+        toast.error('Location permission denied');
+        setIsLocating(false);
+      }
+    );
+  };
+
   const handleManualSearch = async () => {
-    if (!searchLocation) return;
+    if (!searchLocation.trim()) return;
     setIsLocating(true);
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchLocation)}&limit=1`);
-      const data = await res.json();
-      if (data && data.length > 0) {
-        setFormData(prev => ({
-          ...prev,
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon),
-          address: data[0].display_name
-        }));
-        toast.success("Location identified!");
-      } else {
-        toast.error("Location not found");
-      }
-    } catch (error) {
-      toast.error("Search failed");
+      const response = await api.get(`/location/geocode?address=${encodeURIComponent(searchLocation)}`);
+      const { address, coordinates } = response.data.data;
+      setFormData({
+        ...formData,
+        address,
+        coordinates: coordinates.coordinates
+      });
+      toast.success('Location identified');
+    } catch (err) {
+      toast.error('Location not found');
     } finally {
       setIsLocating(false);
     }
@@ -293,22 +214,19 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.requiredSkills.length === 0) return toast.error('Add at least one skill');
-    
+    if (!formData.address) return toast.error('Please select a mission location');
     setLoading(true);
     try {
-      if (formData.lat === 0 || formData.lng === 0) return toast.error('Set mission location');
-      
-      const { lat, lng, ...rest } = formData;
       const payload = {
-        ...rest,
+        ...formData,
         location: {
           type: 'Point',
-          coordinates: [lng, lat]
+          coordinates: formData.coordinates
         }
       };
       await api.post('/task/create', payload);
-      toast.success('Task created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Task successfully created');
       onClose();
     } catch (error: any) {
       toast.error(error.message || 'Failed to create task');
@@ -318,133 +236,145 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-       <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-          <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-             <h2 className="text-2xl font-bold dark:text-white">Create New Mission</h2>
-             <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full transition-colors">
-                <X size={24} className="text-slate-500" />
-             </button>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-black/40 dark:bg-black/80 backdrop-blur-md"
+        />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="bg-white dark:bg-[#0a0a0a] w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10 border border-zinc-200 dark:border-white/5"
+        >
+           <div className="p-8 border-b border-zinc-100 dark:border-white/5 flex items-center justify-between bg-zinc-50/50 dark:bg-white/[0.02]">
+              <div>
+                 <h2 className="text-2xl font-light text-zinc-900 dark:text-white">Create Strategic <span className="font-semibold">Mission</span></h2>
+                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mt-1">Operational Directive Protocol</p>
+              </div>
+              <button onClick={onClose} className="p-3 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-2xl transition-all text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
+                 <X size={20} />
+              </button>
+           </div>
 
-          <form onSubmit={handleCreate} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-             <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Mission Title</label>
-                <input 
-                  type="text" required
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white"
-                  placeholder="e.g., Rescue operation in Downtown"
-                />
-             </div>
+           <form onSubmit={handleCreate} className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="space-y-3">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Mission Title</label>
+                 <input 
+                   type="text" required
+                   value={formData.title}
+                   onChange={(e) => setFormData({...formData, title: e.target.value})}
+                   className="w-full px-5 py-4 bg-zinc-50 dark:bg-white/[0.03] border-2 border-transparent focus:border-zinc-900 dark:focus:border-white rounded-2xl outline-none transition-all dark:text-white text-sm"
+                   placeholder="e.g., Rescue operation in Downtown"
+                 />
+              </div>
 
-             <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Description</label>
-                <textarea 
-                  required rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white resize-none"
-                  placeholder="Describe the disaster response task..."
-                />
-             </div>
+              <div className="space-y-3">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Intelligence Briefing</label>
+                 <textarea 
+                   required rows={4}
+                   value={formData.description}
+                   onChange={(e) => setFormData({...formData, description: e.target.value})}
+                   className="w-full px-5 py-4 bg-zinc-50 dark:bg-white/[0.03] border-2 border-transparent focus:border-zinc-900 dark:focus:border-white rounded-2xl outline-none transition-all dark:text-white text-sm resize-none"
+                   placeholder="Describe the disaster response task..."
+                 />
+              </div>
 
-             <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Volunteers Needed</label>
-                  <input 
-                    type="number" min="1" required
-                    value={formData.volunteersNeeded}
-                    onChange={(e) => setFormData({...formData, volunteersNeeded: parseInt(e.target.value)})}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                   <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Priority</label>
-                   <select 
-                     value={formData.priority}
-                     onChange={(e) => setFormData({...formData, priority: e.target.value as any})}
-                     className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white appearance-none"
-                   >
-                     <option value="low">Low</option>
-                     <option value="medium">Medium</option>
-                     <option value="high">High</option>
-                   </select>
-                </div>
-             </div>
-
-             <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Required Skills</label>
-                <div className="flex flex-wrap gap-2">
-                   {AVAILABLE_SKILLS.map(skill => {
-                     const isSelected = formData.requiredSkills.includes(skill);
-                     return (
-                       <button
-                         key={skill} type="button"
-                         onClick={() => toggleSkill(skill)}
-                         className={clsx(
-                           "px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all",
-                           isSelected ? "bg-blue-600 border-blue-600 text-white" : "bg-slate-50 dark:bg-slate-800 border-transparent text-slate-500"
-                         )}
-                       >
-                         {skill}
-                       </button>
-                     );
-                   })}
-                </div>
-             </div>
-
-             <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between">
-                   <label className="text-sm font-black uppercase tracking-widest text-slate-400">Mission Location</label>
-                   <button 
-                     type="button" 
-                     disabled={isLocating}
-                     onClick={getCurrentLocation}
-                     className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 cursor-pointer"
-                   >
-                     {isLocating ? <Loader2 className="animate-spin" size={14} /> : <MapPin size={14} />}
-                     {isLocating ? "Identifying..." : "📍 Use My Location"}
-                   </button>
-                </div>
-
-                <div className="relative group">
+              <div className="grid grid-cols-2 gap-8">
+                 <div className="space-y-3">
+                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Required Units</label>
                    <input 
-                     type="text"
-                     placeholder="Search location (e.g. Chennai, India)..."
-                     value={searchLocation}
-                     onChange={(e) => setSearchLocation(e.target.value)}
-                     onBlur={handleManualSearch}
-                     className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none transition-all dark:text-white text-sm"
+                     type="number" min="1" required
+                     value={formData.volunteersNeeded}
+                     onChange={(e) => setFormData({...formData, volunteersNeeded: parseInt(e.target.value)})}
+                     className="w-full px-5 py-4 bg-zinc-50 dark:bg-white/[0.03] border-2 border-transparent focus:border-zinc-900 dark:focus:border-white rounded-2xl outline-none transition-all dark:text-white text-sm"
                    />
-                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
-                      <Search size={16} className="dark:text-white" />
-                   </div>
-                </div>
+                 </div>
+                 <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sector Priority</label>
+                    <select 
+                      value={formData.priority}
+                      onChange={(e) => setFormData({...formData, priority: e.target.value as any})}
+                      className="w-full px-5 py-4 bg-zinc-50 dark:bg-[#18181b] border border-transparent focus:border-zinc-900 dark:focus:border-white rounded-2xl outline-none transition-all dark:text-white text-sm appearance-none"
+                    >
+                      <option value="low" className="dark:bg-[#18181b] text-zinc-900 dark:text-white">Low Priority</option>
+                      <option value="medium" className="dark:bg-[#18181b] text-zinc-900 dark:text-white">Medium Priority</option>
+                      <option value="high" className="dark:bg-[#18181b] text-zinc-900 dark:text-white">High Priority</option>
+                    </select>
+                 </div>
+              </div>
 
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1.5">
-                      <Shield size={10} className="text-blue-500" />
-                      Identified Deployment Zone
-                   </p>
-                   <p className="text-sm font-bold dark:text-slate-200 leading-tight">
-                      {formData.address || 'No location selected yet. Use button or search.'}
-                   </p>
-                </div>
-             </div>
+              <div className="space-y-4">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Skillset Filters</label>
+                 <div className="flex flex-wrap gap-2">
+                    {AVAILABLE_SKILLS.map(skill => {
+                      const isSelected = formData.requiredSkills.includes(skill);
+                      return (
+                        <button
+                          key={skill} type="button"
+                          onClick={() => toggleSkill(skill)}
+                          className={clsx(
+                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all",
+                            isSelected ? "bg-zinc-900 border-zinc-900 text-white dark:bg-white dark:border-white dark:text-black" : "bg-transparent border-zinc-100 dark:border-white/5 text-zinc-400 hover:border-zinc-200"
+                          )}
+                        >
+                          {skill}
+                        </button>
+                      );
+                    })}
+                 </div>
+              </div>
 
-             <div className="pt-4">
-                <button 
-                  type="submit" disabled={loading}
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:bg-slate-400"
-                >
-                  {loading ? <Loader2 className="animate-spin" /> : <Plus />}
-                  Create Mission
-                </button>
-             </div>
-          </form>
-       </div>
+              <div className="space-y-5 pt-6 border-t border-zinc-100 dark:border-white/5">
+                 <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Deployment Coordinates</label>
+                    <button 
+                      type="button" 
+                      disabled={isLocating}
+                      onClick={getCurrentLocation}
+                      className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-white/5 text-zinc-900 dark:text-white rounded-xl hover:bg-zinc-200 transition-all font-black text-[9px] uppercase tracking-[0.2em] disabled:opacity-50"
+                    >
+                      {isLocating ? <Loader2 className="animate-spin" size={14} /> : <MapPin size={14} />}
+                      Synchronize GPS
+                    </button>
+                 </div>
+
+                 <div className="relative">
+                    <input 
+                      type="text"
+                      placeholder="Search deployment address..."
+                      value={searchLocation}
+                      onChange={(e) => setSearchLocation(e.target.value)}
+                      onBlur={handleManualSearch}
+                      className="w-full px-5 py-4 bg-zinc-50 dark:bg-white/[0.03] border-2 border-transparent focus:border-zinc-900 dark:focus:border-white rounded-2xl outline-none transition-all dark:text-white text-sm"
+                    />
+                 </div>
+
+                 <div className="p-5 bg-zinc-50 dark:bg-white/[0.02] rounded-[1.5rem] border border-zinc-100 dark:border-white/5">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-3 flex items-center gap-2">
+                       <Shield size={10} className="text-zinc-400" />
+                       Delivery / Deployment Address
+                    </p>
+                    <p className="text-xs font-light dark:text-zinc-300 leading-relaxed italic">
+                       {formData.address || 'Select a location to establish staging area.'}
+                    </p>
+                 </div>
+              </div>
+
+              <div className="pt-4 border-t border-zinc-100 dark:border-white/5 pt-8">
+                 <button 
+                   type="submit" disabled={loading}
+                   className="w-full py-5 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-100 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-black/10 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:bg-zinc-300"
+                 >
+                   {loading ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                   Create Task Now
+                 </button>
+              </div>
+           </form>
+        </motion.div>
     </div>
   );
 };
@@ -462,12 +392,12 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
     }
   });
 
-  const deleteAssignmentMutation = useMutation({
-    mutationFn: (assignmentId: string) => api.delete(`/assignVolunteer/${assignmentId}`),
+  const revokeMutation = useMutation({
+    mutationFn: (aid: string) => api.delete(`/assignVolunteer/${aid}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments', task._id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Assignment removed');
+      toast.success('Personnel reassigned');
     }
   });
 
@@ -475,11 +405,10 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
     mutationFn: () => api.patch(`/task/${task._id}/status`, { status: 'completed' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Mission officially completed');
+      toast.success('Task marked as completed');
       onClose();
     }
   });
-
 
   const getDerivedStatus = () => {
     if (task.status === 'completed') return 'completed';
@@ -493,188 +422,186 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
   const allSubTasksFinished = assignments.length > 0 && assignments.every(a => a.status === 'completed' || a.status === 'rejected');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-       <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-          <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
-             <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
-                   {task.status === 'completed' ? <CheckCircle size={24} /> : <Info size={24} />}
-                </div>
-                <div>
-                   <h2 className="text-2xl font-black dark:text-white leading-none mb-1">{task.title}</h2>
-                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                     {task.status === 'completed' ? "Mission Archive" : "Mission Parameters & Intelligence"}
-                   </p>
-                </div>
-             </div>
-             <div className="flex items-center gap-4">
-                {isAdmin && task.status !== 'completed' && allSubTasksFinished && (
-                   <button 
-                     onClick={() => completeTaskMutation.mutate()}
-                     disabled={completeTaskMutation.isPending}
-                     className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95"
-                   >
-                     {completeTaskMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle size={14} />}
-                     Complete Mission
-                   </button>
-                )}
-                <button onClick={onClose} className="p-3 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-2xl transition-all cursor-pointer">
-                   <X size={24} className="text-slate-500" />
-                </button>
-             </div>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-black/40 dark:bg-black/80 backdrop-blur-md"
+        />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="bg-white dark:bg-[#0a0a0a] w-full max-w-4xl rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] overflow-hidden relative z-10 border border-zinc-200 dark:border-white/5 flex flex-col max-h-[90vh]"
+        >
+           <div className="p-8 border-b border-zinc-100 dark:border-white/5 flex items-center justify-between bg-zinc-50/50 dark:bg-white/[0.02]">
+              <div className="flex items-center gap-5">
+                 <div className="w-12 h-12 bg-zinc-900 dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-black shadow-lg">
+                    {task.status === 'completed' ? <CheckCircle size={22} /> : <Info size={22} />}
+                 </div>
+                 <div>
+                    <h2 className="text-2xl font-light text-zinc-900 dark:text-white leading-none mb-2">{task.title}</h2>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                      {task.status === 'completed' ? "Task History Record" : "View Task Details"}
+                    </p>
+                 </div>
+              </div>
+              <div className="flex items-center gap-4">
+                 {isAdmin && task.status !== 'completed' && allSubTasksFinished && (
+                    <button 
+                      onClick={() => completeTaskMutation.mutate()}
+                      disabled={completeTaskMutation.isPending}
+                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 disabled:grayscale"
+                    >
+                      {completeTaskMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle size={14} />}
+                      Acknowledge Completion
+                    </button>
+                 )}
+                 <button onClick={onClose} className="p-3 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-2xl transition-all text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
+                    <X size={20} />
+                 </button>
+              </div>
+           </div>
 
-          <div className="flex-1 overflow-y-auto p-8 lg:p-12 space-y-12">
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                {}
-                <div className="space-y-8">
-                   <div className="space-y-4">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 flex items-center gap-2">
-                         <Shield size={14} />
-                         Strategic Briefing
-                      </h4>
-                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-bold">
-                         {task.description}
-                      </p>
-                   </div>
+           <div className="flex-1 overflow-y-auto p-10 lg:p-14 space-y-12 custom-scrollbar">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                 <div className="space-y-10">
+                    <div className="space-y-6">
+                       <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
+                          <Shield size={14} className="text-zinc-300" />
+                          Strategic Briefing
+                       </h4>
+                       <p className="text-zinc-600 dark:text-zinc-300 text-base leading-relaxed font-light italic">
+                          "{task.description}"
+                       </p>
+                    </div>
 
-                   <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Current Status</p>
-                         <p className={clsx(
-                            "text-sm font-black uppercase tracking-tighter",
-                            currentStatus === 'open' ? "text-emerald-500" : currentStatus === 'in-progress' ? "text-amber-500" : "text-slate-400"
-                         )}>
-                            {currentStatus}
-                         </p>
-                      </div>
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Priority Level</p>
-                         <p className={clsx(
-                            "text-sm font-black uppercase tracking-tighter",
-                            task.priority === 'high' ? "text-rose-500" : task.priority === 'medium' ? "text-orange-500" : "text-blue-500"
-                         )}>
-                            {task.priority}
-                         </p>
-                      </div>
-                   </div>
+                    <div className="grid grid-cols-2 gap-6">
+                       <div className="p-6 bg-zinc-50 dark:bg-white/[0.02] rounded-[2rem] border border-zinc-100 dark:border-white/5">
+                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2">Internal Status</p>
+                          <p className={clsx(
+                             "text-xs font-black uppercase tracking-widest",
+                             currentStatus === 'open' ? "text-emerald-500" : currentStatus === 'in-progress' ? "text-amber-500" : "text-zinc-400"
+                          )}>
+                             {currentStatus}
+                          </p>
+                       </div>
+                       <div className="p-6 bg-zinc-50 dark:bg-white/[0.02] rounded-[2rem] border border-zinc-100 dark:border-white/5">
+                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2">Priority Vector</p>
+                          <p className={clsx(
+                             "text-xs font-black uppercase tracking-widest",
+                             task.priority === 'high' ? "text-rose-500" : task.priority === 'medium' ? "text-amber-500" : "text-blue-500"
+                          )}>
+                             {task.priority} Severity
+                          </p>
+                       </div>
+                    </div>
 
-                   <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/30 flex items-start gap-4">
-                      <MapPin className="text-blue-600 shrink-0 mt-1" size={20} />
-                      <div>
-                         <p className="text-[10px] font-black uppercase tracking-widest text-blue-600/60 mb-1">Deployment Zone</p>
-                         <p className="text-sm font-bold dark:text-blue-200 leading-tight">
-                            {task.address || "Strategic address information pending"}
-                         </p>
-                      </div>
-                   </div>
+                    <div className="p-6 bg-zinc-900 dark:bg-white rounded-[2rem] flex items-start gap-5 shadow-xl">
+                       <MapPin className="text-zinc-400 dark:text-zinc-500 shrink-0 mt-1" size={24} />
+                       <div>
+                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 mb-2">Deployment Zone</p>
+                          <p className="text-sm font-semibold text-white dark:text-black leading-tight">
+                             {task.address || "Strategic address information pending"}
+                          </p>
+                       </div>
+                    </div>
 
-                   <div className="space-y-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Required Skillsets</p>
-                      <div className="flex flex-wrap gap-2">
-                         {task.requiredSkills.map(skill => (
-                            <span key={skill} className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 rounded-lg border border-slate-200 dark:border-slate-700">
-                               {skill}
-                            </span>
-                         ))}
-                      </div>
-                   </div>
-                </div>
+                    <div className="space-y-6">
+                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Required Skillsets</p>
+                       <div className="flex flex-wrap gap-2">
+                          {task.requiredSkills.map(skill => (
+                             <span key={skill} className="px-3 py-1.5 bg-zinc-50 dark:bg-white/5 text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 rounded-lg border border-zinc-200 dark:border-white/10">
+                                {skill}
+                             </span>
+                          ))}
+                       </div>
+                    </div>
+                 </div>
 
-                {}
-                <div className="space-y-6">
-                   <div className="flex items-center justify-between bg-slate-900 dark:bg-black p-4 rounded-2xl shadow-xl">
-                      <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                            <Clock size={16} />
-                         </div>
-                         <span className="text-xs font-black uppercase tracking-widest text-white">Live Roster</span>
-                      </div>
-                      <span className="text-sm font-black text-blue-400">{assignments.length} / {task.volunteersNeeded}</span>
-                   </div>
+                 <div className="space-y-10">
+                    <div className="flex items-center justify-between">
+                       <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
+                          <UserIcon size={14} className="text-zinc-300" />
+                          Personnel Roster
+                       </h4>
+                       <span className="text-[10px] font-black tracking-widest text-zinc-900 dark:text-white px-3 py-1 bg-zinc-100 dark:bg-white/10 rounded-full border border-zinc-200 dark:border-white/10">
+                          {assignments.length} / {task.volunteersNeeded} Units
+                       </span>
+                    </div>
 
-                   <div className="space-y-4 min-h-[200px]">
-                      {isLoading ? (
-                         <div className="flex flex-col gap-3">
-                            {[1, 2].map(i => <div key={i} className="h-20 bg-slate-50 dark:bg-slate-800 rounded-2xl animate-pulse"></div>)}
-                         </div>
-                      ) : assignments.length > 0 ? (
-                         assignments.map(assignment => {
-                            const volunteer = assignment.volunteer as User;
-                            return (
-                               <div key={assignment._id} className="p-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
-                                  <div className="flex items-center gap-4">
-                                     <div className="w-10 h-10 bg-slate-50 dark:bg-slate-700 rounded-xl flex items-center justify-center text-slate-400">
-                                        <UserIcon size={20} />
-                                     </div>
-                                     <div>
-                                        <p className="text-sm font-black dark:text-white leading-none mb-1">{volunteer.name}</p>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{volunteer.email}</p>
-                                     </div>
-                                     <div className="ml-2 flex items-center gap-2">
-                                        {assignment.status === 'completed' ? (
-                                           <CheckCircle className="text-emerald-500" size={14} />
-                                        ) : assignment.status === 'accepted' ? (
-                                           <Clock className="text-blue-500" size={14} />
-                                        ) : assignment.status === 'rejected' ? (
-                                           <XCircle className="text-rose-500" size={14} />
-                                        ) : (
-                                           <AlertTriangle className="text-amber-500" size={14} />
-                                        )}
-                                        {assignment.status === 'rejected' && (
-                                           <span className="text-[8px] font-black uppercase text-rose-500">Declined</span>
-                                        )}
-                                     </div>
-                                  </div>
+                    {isLoading ? (
+                       <div className="space-y-4">
+                          {[1, 2].map(i => <div key={i} className="h-16 bg-zinc-50 dark:bg-white/5 rounded-2xl animate-pulse" />)}
+                       </div>
+                    ) : assignments.length > 0 ? (
+                       <div className="space-y-4">
+                          {assignments.map(assignment => {
+                             const volunteer = assignment.volunteer as any;
+                             return (
+                                <motion.div 
+                                  layout
+                                  key={assignment._id}
+                                  className="group flex items-center justify-between p-5 bg-white dark:bg-white/[0.02] border border-zinc-100 dark:border-white/5 rounded-2xl hover:border-zinc-300 dark:hover:border-white/30 transition-all shadow-sm"
+                                >
+                                   <div className="flex items-center gap-4">
+                                      <div className="w-10 h-10 bg-zinc-50 dark:bg-white/5 rounded-full flex items-center justify-center text-zinc-400 dark:text-zinc-500 font-bold text-xs ring-1 ring-zinc-200 dark:ring-white/10">
+                                         {volunteer.name?.[0] || 'U'}
+                                      </div>
+                                      <div>
+                                         <p className="text-sm font-semibold text-zinc-900 dark:text-white leading-none mb-1">{volunteer.name}</p>
+                                         <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5">
+                                            <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                                            {assignment.status}
+                                         </p>
+                                      </div>
+                                   </div>
+                                   {isAdmin && (
+                                      <button 
+                                        onClick={() => revokeMutation.mutate(assignment._id)}
+                                        className="p-2.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                        title="Reassign Personnel"
+                                      >
+                                         <XCircle size={18} />
+                                      </button>
+                                   )}
+                                </motion.div>
+                             );
+                          })}
+                       </div>
+                    ) : (
+                       <div className="py-12 text-center rounded-[2rem] border border-dashed border-zinc-200 dark:border-white/10">
+                          <Users className="mx-auto text-zinc-300 dark:text-zinc-800 mb-3" size={32} />
+                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 italic">Deployment List Empty</p>
+                       </div>
+                    )}
 
-                                  {isAdmin && (
-                                     <button 
-                                       onClick={() => deleteAssignmentMutation.mutate(assignment._id)}
-                                       className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                       title="Revoke Assignment"
-                                     >
-                                        <Trash2 size={16} />
-                                     </button>
-                                  )}
-                               </div>
-                            );
-                         })
-                      ) : (
-                         <div className="h-full flex flex-col items-center justify-center py-12 text-center bg-slate-50 dark:bg-slate-800/30 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
-                            <Info className="text-slate-300 mb-3" size={32} />
-                            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No volunteers assigned yet</p>
-                         </div>
-                      )}
-                   </div>
+                    {isAdmin && task.status !== 'completed' && (
+                       <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/5 dark:to-purple-500/5 p-8 rounded-[2rem] border border-indigo-500/20 dark:border-indigo-500/10 relative overflow-hidden">
+                          <h5 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                             <Sparkles size={12} className="text-indigo-400" />
+                             AI Commander Insight
+                          </h5>
+                          <p className="text-sm font-light leading-relaxed italic text-zinc-600 dark:text-zinc-300">
+                             "Optimal team matching identifies qualified responders based on {task.requiredSkills.slice(0,2).join(', ')} precision analytics."
+                          </p>
+                       </div>
+                    )}
+                 </div>
+              </div>
+           </div>
 
-                   {}
-                   {assignments.some(a => a.aiReason) && (
-                      <div className="p-6 bg-indigo-600 rounded-[2rem] shadow-2xl shadow-indigo-600/20 text-white relative overflow-hidden group">
-                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
-                            <Shield size={100} />
-                         </div>
-                         <h5 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                            <Sparkles size={12} className="text-indigo-200" />
-                            AI Commander Insight
-                         </h5>
-                         <p className="text-sm font-bold leading-relaxed italic text-indigo-100">
-                            "Optimal team matching identifies {assignments.length} qualified responders based on {task.requiredSkills.slice(0,2).join(', ')} precision."
-                         </p>
-                      </div>
-                   )}
-                </div>
-             </div>
-          </div>
-
-          <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 text-right">
-             <button 
-               onClick={onClose}
-               className="px-8 py-3 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 hover:border-slate-900 dark:hover:border-white text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all cursor-pointer"
-             >
-                Dismiss Intelligence
-             </button>
-          </div>
-       </div>
+           <div className="p-8 border-t border-zinc-100 dark:border-white/5 bg-zinc-50/50 dark:bg-white/[0.02] text-right">
+              <button 
+                onClick={onClose}
+                className="px-8 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 hover:border-zinc-900 dark:hover:border-white text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all active:scale-95"
+              >
+                 Close Details
+              </button>
+           </div>
+        </motion.div>
     </div>
   );
 };

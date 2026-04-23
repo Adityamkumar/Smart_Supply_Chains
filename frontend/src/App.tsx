@@ -58,12 +58,10 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster 
-        position="top-center" 
+        position="top-right" 
         toastOptions={{
-          style: {
-            background: isDarkMode ? '#1e293b' : '#ffffff',
-            color: isDarkMode ? '#f8fafc' : '#0f172a',
-          },
+          className: 'dark:bg-[#121212] dark:text-zinc-100 dark:border dark:border-white/10 font-sans text-sm',
+          duration: 3000,
         }} 
       />
       <BrowserRouter>

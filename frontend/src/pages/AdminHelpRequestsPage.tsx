@@ -5,10 +5,11 @@ import type { HelpRequest } from '../types';
 import { 
   MessageSquare, Loader2, Phone, MapPin, 
   Users, AlertTriangle, CheckCircle, Play, 
-  Trash2, Search, ChevronRight
+  Trash2, Search, ChevronRight, Activity, Zap
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminHelpRequestsPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -42,7 +43,6 @@ const AdminHelpRequestsPage: React.FC = () => {
 
   const convertToTaskMutation = useMutation({
     mutationFn: async (request: HelpRequest) => {
-
       const taskResponse = await api.post('/task/create', {
         title: `HELP: ${request.description.substring(0, 30)}...`,
         description: request.description,
@@ -55,7 +55,6 @@ const AdminHelpRequestsPage: React.FC = () => {
         volunteersNeeded: request.volunteersNeeded,
         priority: request.priority === 'emergency' ? 'high' : request.priority as any,
       });
-
 
       await api.patch(`/help-requests/${request._id}`, {
         status: 'converted',
@@ -77,187 +76,201 @@ const AdminHelpRequestsPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-             <MessageSquare className="text-blue-600" size={32} />
-             Community Help Requests
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 text-sm uppercase tracking-widest">Incoming Tactical Intel from Civil Sector</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-           <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-              {['all', 'pending', 'converted', 'completed'].map(opt => (
-                 <button
-                   key={opt}
-                   onClick={() => setStatusFilter(opt)}
-                   className={clsx(
-                     "px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all",
-                     statusFilter === opt ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                   )}
-                 >
-                   {opt}
-                 </button>
-              ))}
+    <div className="space-y-10 max-w-5xl mx-auto pb-16">
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-zinc-200 dark:border-white/5"
+      >
+        <div className="space-y-2">
+           <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-1">
+              <Activity size={10} className="text-zinc-400" />
+              Intelligence Stream
            </div>
+           <h1 className="text-4xl font-light tracking-tight text-zinc-900 dark:text-white leading-tight">
+              Community <span className="font-semibold">Insights</span>
+           </h1>
+           <p className="text-zinc-500 dark:text-zinc-400 text-sm font-light">
+              Tactical review of incoming civil sector directives and support requests.
+           </p>
         </div>
-      </div>
 
-      <div className="relative">
-         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+        <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-[#121212] p-1.5 rounded-xl border border-zinc-200 dark:border-white/10">
+           {['all', 'pending', 'converted', 'completed'].map(opt => (
+              <button
+                key={opt}
+                onClick={() => setStatusFilter(opt)}
+                className={clsx(
+                   "px-4 py-2 text-[10px] font-black uppercase tracking-[0.1em] rounded-lg transition-all active:scale-[0.98]",
+                   statusFilter === opt ? "bg-white dark:bg-white/10 text-zinc-950 dark:text-white shadow-sm ring-1 ring-black/5" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                )}
+              >
+                {opt}
+              </button>
+           ))}
+        </div>
+      </motion.div>
+
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className="relative"
+      >
+         <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
          <input
            type="text"
-           placeholder="Search requests by name or intelligence briefing..."
+           placeholder="Search intelligence briefings..."
            value={search}
            onChange={(e) => setSearch(e.target.value)}
-           className="w-full pl-12 pr-6 py-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 outline-none focus:border-blue-500 transition-all font-bold dark:text-white"
+           className="w-full pl-14 pr-8 py-4 bg-white dark:bg-[#121212] rounded-2xl shadow-sm border border-zinc-200 dark:border-white/5 outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white focus:border-zinc-900 dark:focus:border-white transition-all text-sm font-light dark:text-zinc-100"
          />
-      </div>
+      </motion.div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="flex flex-col gap-5">
            {[1, 2, 3, 4].map(i => (
-             <div key={i} className="h-64 bg-slate-100 dark:bg-slate-800 rounded-[2.5rem] animate-pulse"></div>
+             <div key={i} className="h-40 bg-zinc-50 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-2xl animate-pulse"></div>
            ))}
         </div>
       ) : filteredRequests.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           {filteredRequests.map((req) => (
-             <div 
-               key={req._id} 
-               className={clsx(
-                 "bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group",
-                 req.status === 'converted' && "opacity-80 border-blue-500/20"
-               )}
-             >
-                {}
-                <div className={clsx(
-                  "absolute top-0 right-0 px-6 py-2 text-white text-[10px] font-black uppercase tracking-widest rounded-bl-3xl flex items-center gap-2",
-                  req.priority === 'emergency' ? "bg-red-600 animate-pulse" :
-                  req.priority === 'high' ? "bg-rose-500" :
-                  req.priority === 'medium' ? "bg-orange-500" : "bg-emerald-500"
-                )}>
-                   <AlertTriangle size={10} />
-                   {req.priority}
-                </div>
+        <motion.div 
+          layout
+          className="flex flex-col gap-5"
+        >
+          <AnimatePresence mode="popLayout">
+             {filteredRequests.map((req) => (
+               <motion.div 
+                 layout
+                 initial={{ opacity: 0, x: -10 }}
+                 animate={{ opacity: 1, x: 0 }}
+                 exit={{ opacity: 0, scale: 0.95 }}
+                 key={req._id} 
+                 className={clsx(
+                   "bg-white dark:bg-[#121212] rounded-2xl p-6 md:p-8 border border-zinc-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all relative overflow-hidden group flex flex-col gap-6",
+                   req.status === 'converted' && "opacity-80 grayscale-[0.5]"
+                 )}
+               >
+                 <div className={clsx(
+                   "absolute top-0 right-0 px-4 py-1 text-[8px] font-black uppercase tracking-[0.2em] rounded-bl-xl flex items-center gap-1.5",
+                   req.priority === 'emergency' ? "bg-rose-500 text-white animate-pulse" :
+                   req.priority === 'high' ? "bg-rose-500/10 text-rose-500" :
+                   req.priority === 'medium' ? "bg-amber-500/10 text-amber-500" : "bg-emerald-500/10 text-emerald-500"
+                 )}>
+                    {req.priority === 'emergency' && <Zap size={10} fill="currentColor" />}
+                    {req.priority} Sector Priority
+                 </div>
 
-                <div className="flex justify-between items-start mb-6">
-                   <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 group-hover:scale-110 transition-transform">
-                         <MessageSquare size={28} />
-                      </div>
-                      <div>
-                         <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none mb-1">{req.name}</h3>
-                         <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-sm">
-                            <Phone size={14} />
-                            {req.phone}
-                         </div>
-                      </div>
-                   </div>
-                   <div className="pt-2">
-                      <span className={clsx(
-                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                         req.status === 'pending' ? "bg-blue-50 text-blue-600 border border-blue-100" :
-                         req.status === 'converted' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
-                         "bg-slate-100 text-slate-600 border border-slate-200"
-                      )}>
-                         {req.status}
-                      </span>
-                   </div>
-                </div>
+                 <div className="flex flex-col md:flex-row justify-between items-start gap-4 w-full pt-2">
+                    <div className="flex items-center gap-5">
+                       <div className="w-12 h-12 bg-zinc-50 dark:bg-white/5 border border-zinc-100 dark:border-white/10 rounded-2xl flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-all">
+                          <MessageSquare size={22} />
+                       </div>
+                       <div className="flex flex-col space-y-1.5">
+                          <h3 className="text-xl font-semibold text-zinc-900 dark:text-white leading-none flex items-center gap-3">
+                            {req.name}
+                             <span className={clsx(
+                                "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest leading-none border",
+                                 req.status === 'pending' ? "bg-white text-zinc-600 border-zinc-200 dark:bg-white/5 dark:text-zinc-400 dark:border-white/10" :
+                                 req.status === 'converted' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400" :
+                                 "bg-zinc-100 text-zinc-400 border-transparent dark:bg-black/20"
+                             )}>
+                                {req.status}
+                             </span>
+                          </h3>
+                          <div className="flex items-center gap-5 pt-0.5">
+                             <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-light text-[11px]">
+                                <Phone size={13} className="text-zinc-400" />
+                                {req.phone}
+                             </div>
+                             <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-light text-[11px]">
+                                <MapPin size={13} className="text-zinc-400" />
+                                <span className="line-clamp-1 max-w-[250px]">{req.location.address}</span>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                       <div className="flex bg-zinc-50 dark:bg-white/5 rounded-xl border border-zinc-200 dark:border-white/10 px-4 py-2 items-center gap-2 h-fit">
+                          <Users size={14} className="text-zinc-400" />
+                          <span className="text-[10px] uppercase font-black tracking-widest text-zinc-600 dark:text-zinc-400">{req.volunteersNeeded} Required Units</span>
+                       </div>
+                    </div>
+                 </div>
 
-                <p className="text-slate-600 dark:text-slate-300 font-bold leading-relaxed line-clamp-3 mb-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 italic">
-                   "{req.description}"
-                </p>
+                 <div className="bg-zinc-50/50 dark:bg-white/[0.02] p-6 rounded-2xl border border-zinc-100 dark:border-white/5 relative group-hover:bg-white dark:group-hover:bg-black/20 transition-all">
+                    <p className="text-zinc-600 dark:text-zinc-300 text-sm leading-relaxed font-light italic">
+                       "{req.description}"
+                    </p>
+                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                   <div className="flex items-center gap-3">
-                      <MapPin size={18} className="text-slate-400" />
-                      <div>
-                         <p className="text-[10px] font-black text-slate-400 uppercase">Strategic Zone</p>
-                         <p className="text-xs font-bold dark:text-white line-clamp-1">{req.location.address}</p>
-                      </div>
-                   </div>
-                   <div className="flex items-center gap-3 text-right justify-end">
-                      <div className="text-right">
-                         <p className="text-[10px] font-black text-slate-400 uppercase">Staff Load</p>
-                         <p className="text-xs font-bold dark:text-white">{req.volunteersNeeded} Volunteers</p>
-                      </div>
-                      <Users size={18} className="text-slate-400" />
-                   </div>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-slate-50 dark:border-slate-800 pt-6">
-                   <div className="flex items-center gap-2">
-                      {req.status === 'pending' && (
-                        <>
+                 <div className="flex items-center justify-between border-t border-zinc-100 dark:border-white/5 pt-6">
+                    <div className="flex items-center gap-3">
+                       {req.status === 'pending' && (
+                         <>
+                           <button 
+                             onClick={() => convertToTaskMutation.mutate(req)}
+                             disabled={convertToTaskMutation.isPending}
+                             className="px-6 py-2.5 bg-zinc-900 dark:bg-white dark:text-black dark:hover:bg-zinc-100 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 active:scale-[0.97] shadow-sm"
+                           >
+                              {convertToTaskMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : <Play size={12} fill="currentColor" />}
+                              Initiate Strategic Task
+                           </button>
+                           <button 
+                              onClick={() => updateStatusMutation.mutate({ id: req._id, status: 'rejected' })}
+                              className="px-6 py-2.5 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-[0.97] border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20"
+                           >
+                              Decline
+                           </button>
+                         </>
+                       )}
+                       
+                       {req.status === 'converted' && (
+                         <>
+                          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest mr-4">
+                             <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                             Operational Directive
+                          </div>
+                          {req.linkedTask && (
+                            <a href={`/app/tasks`} className="px-5 py-2.5 bg-zinc-100 dark:bg-white/5 text-zinc-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-200 dark:hover:bg-white/10 transition-all flex items-center gap-2 border border-zinc-200 dark:border-white/10">
+                              Navigate to Mission <ChevronRight size={12} />
+                            </a>
+                          )}
                           <button 
-                            onClick={() => convertToTaskMutation.mutate(req)}
-                            disabled={convertToTaskMutation.isPending}
-                            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-95 flex items-center gap-2"
+                             onClick={() => updateStatusMutation.mutate({ id: req._id, status: 'completed' })}
+                             className="px-5 py-2.5 border border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-100 dark:hover:bg-white/5 transition-all ml-2"
                           >
-                             {convertToTaskMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : <Play size={12} fill="currentColor" />}
-                             Create Task
+                             Archive Case
                           </button>
-                          <button 
-                             onClick={() => updateStatusMutation.mutate({ id: req._id, status: 'rejected' })}
-                             className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-50 hover:text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95"
-                          >
-                             Reject
-                          </button>
-                        </>
-                      )}
-                      
-                      {req.status === 'converted' && (
-                        <>
-                         <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest mr-2">
-                            <CheckCircle size={14} />
-                            Task Operational
-                         </div>
-                         <button 
-                            onClick={() => updateStatusMutation.mutate({ id: req._id, status: 'completed' })}
-                            className="px-4 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all"
-                         >
-                            Close Case
-                         </button>
-                        </>
-                      )}
+                         </>
+                       )}
 
-                      {req.status === 'completed' && (
-                         <div className="flex items-center gap-2 text-slate-500 bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">
-                            <CheckCircle size={14} />
-                            Case Closed
-                         </div>
-                      )}
-                   </div>
+                       {req.status === 'completed' && (
+                          <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+                             <CheckCircle size={16} />
+                             Case Archived
+                          </div>
+                       )}
+                    </div>
 
-                   <button 
-                     onClick={() => deleteMutation.mutate(req._id)}
-                     className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-2xl transition-all"
-                     title="Permanent Deletion"
-                   >
-                      <Trash2 size={20} />
-                   </button>
-                </div>
-                
-                {req.linkedTask && (
-                   <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
-                      <span className="text-[10px] font-black text-slate-400 uppercase">Linked Intel:</span>
-                      <a href={`/tasks`} className="text-[10px] font-black text-blue-600 hover:underline flex items-center gap-1">
-                         Mission Ledger <ChevronRight size={10} />
-                      </a>
-                   </div>
-                )}
-             </div>
-           ))}
-        </div>
+                    <button 
+                      onClick={() => deleteMutation.mutate(req._id)}
+                      className="p-3 text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-transparent hover:border-rose-500/20 active:scale-95"
+                      title="Purge Intel Record"
+                    >
+                       <Trash2 size={18} />
+                    </button>
+                 </div>
+               </motion.div>
+             ))}
+          </AnimatePresence>
+        </motion.div>
       ) : (
-        <div className="py-24 text-center bg-slate-50 dark:bg-slate-900 rounded-[3rem] border-4 border-dashed border-slate-100 dark:border-slate-800">
-           <MessageSquare size={64} className="mx-auto text-slate-200 dark:text-slate-800 mb-6" />
-           <h3 className="text-2xl font-black text-slate-400 uppercase tracking-[0.2em]">No Help Requests Signal</h3>
-           <p className="text-slate-500 mt-2 font-bold uppercase text-[10px] tracking-widest">Total Civilian Silence Detected</p>
+        <div className="py-24 text-center bg-zinc-50 dark:bg-[#0a0a0a] rounded-2xl border border-dashed border-zinc-200 dark:border-white/10">
+           <MessageSquare size={32} className="mx-auto text-zinc-400 dark:text-zinc-600 mb-4" />
+           <h3 className="text-lg font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">No Intelligence Signal</h3>
+           <p className="text-zinc-400 mt-1 font-medium text-xs">Total Sector Silence Detected</p>
         </div>
       )}
     </div>
