@@ -33,22 +33,9 @@ app.use("/api/assign/ai", aiRoutes);
 import helpRequestRouter from "./routes/helpRequest.route.js";
 app.use("/api/help-requests", helpRequestRouter);
 
-if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, "../../frontend/dist");
-  app.use(express.static(frontendPath));
-
-  app.get("*", (req, res) => {
-    if (!req.url.startsWith('/api')) {
-      res.sendFile(path.join(frontendPath, "index.html"));
-    } else {
-      res.status(404).json({ message: "API endpoint not found" });
-    }
-  });
-} else {
-  app.get("/", (req, res) => {
-    res.send("Strategic API Backend is Live (Development Mode)");
-  });
-}
+app.get("/", (req, res) => {
+  res.json({ message: "VolunSync Strategic API is Live", status: "Operational" });
+});
 
 
 app.use((err: any, req: any, res: any, next: any) => {
