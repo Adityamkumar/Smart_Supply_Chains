@@ -5,7 +5,7 @@ import type { HelpRequest } from '../types';
 import { 
   MessageSquare, Loader2, Phone, MapPin, 
   Users, AlertTriangle, CheckCircle, Play, 
-  Trash2, Search, ChevronRight, Activity, Zap
+  Trash2, Search, ChevronRight, Activity, Zap, Sparkles
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
@@ -85,13 +85,13 @@ const AdminHelpRequestsPage: React.FC = () => {
         <div className="space-y-2">
            <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-1">
               <Activity size={10} className="text-zinc-400" />
-              Intelligence Stream
+              New Help Requests
            </div>
            <h1 className="text-4xl font-light tracking-tight text-zinc-900 dark:text-white leading-tight">
-              Community <span className="font-semibold">Insights</span>
+              Community <span className="font-semibold">Requests</span>
            </h1>
            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-light">
-              Tactical review of incoming civil sector directives and support requests.
+              See what people in the community are asking for and help them.
            </p>
         </div>
 
@@ -158,7 +158,7 @@ const AdminHelpRequestsPage: React.FC = () => {
                    req.priority === 'medium' ? "bg-amber-500/10 text-amber-500" : "bg-emerald-500/10 text-emerald-500"
                  )}>
                     {req.priority === 'emergency' && <Zap size={10} fill="currentColor" />}
-                    {req.priority} Sector Priority
+                    {req.priority} Priority
                  </div>
 
                  <div className="flex flex-col md:flex-row justify-between items-start gap-4 w-full pt-2">
@@ -175,7 +175,7 @@ const AdminHelpRequestsPage: React.FC = () => {
                                  req.status === 'converted' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400" :
                                  "bg-zinc-100 text-zinc-400 border-transparent dark:bg-black/20"
                              )}>
-                                {req.status}
+                                {req.status === 'pending' ? 'New' : req.status === 'converted' ? 'Created' : req.status}
                              </span>
                           </h3>
                           <div className="flex items-center gap-5 pt-0.5">
@@ -194,7 +194,7 @@ const AdminHelpRequestsPage: React.FC = () => {
                     <div className="flex items-center gap-3 w-full md:w-auto">
                        <div className="flex bg-zinc-50 dark:bg-white/5 rounded-xl border border-zinc-200 dark:border-white/10 px-4 py-2 items-center gap-2 h-fit">
                           <Users size={14} className="text-zinc-400" />
-                          <span className="text-[10px] uppercase font-black tracking-widest text-zinc-600 dark:text-zinc-400">{req.volunteersNeeded} Required Units</span>
+                          <span className="text-[10px] uppercase font-black tracking-widest text-zinc-600 dark:text-zinc-400">{req.volunteersNeeded} Volunteers Needed</span>
                        </div>
                     </div>
                  </div>
@@ -208,22 +208,46 @@ const AdminHelpRequestsPage: React.FC = () => {
                  <div className="flex items-center justify-between border-t border-zinc-100 dark:border-white/5 pt-6">
                     <div className="flex items-center gap-3">
                        {req.status === 'pending' && (
-                         <>
-                           <button 
-                             onClick={() => convertToTaskMutation.mutate(req)}
-                             disabled={convertToTaskMutation.isPending}
-                             className="px-6 py-2.5 bg-zinc-900 dark:bg-white dark:text-black dark:hover:bg-zinc-100 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 active:scale-[0.97] shadow-sm"
-                           >
-                              {convertToTaskMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : <Play size={12} fill="currentColor" />}
-                              Initiate Strategic Task
-                           </button>
-                           <button 
-                              onClick={() => updateStatusMutation.mutate({ id: req._id, status: 'rejected' })}
-                              className="px-6 py-2.5 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-[0.97] border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20"
-                           >
-                              Decline
-                           </button>
-                         </>
+                          <div className="flex flex-wrap gap-3">
+                            <button 
+                              onClick={() => convertToTaskMutation.mutate(req)}
+                              disabled={convertToTaskMutation.isPending}
+                              className="px-6 py-2.5 bg-zinc-900 dark:bg-white dark:text-black dark:hover:bg-zinc-100 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 active:scale-[0.97] shadow-sm"
+                            >
+                               {convertToTaskMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : <Play size={12} fill="currentColor" />}
+                               Accept & Create
+                            </button>
+                            <button 
+                              onClick={async () => {
+                                try {
+                                  const res = await api.post('/assign/ai/triage', { rawText: req.description });
+                                  const aiData = res.data.data;
+                                  
+                                  const customTask = {
+                                    ...req,
+                                    description: aiData.description,
+                                    priority: aiData.priority,
+                                    volunteersNeeded: aiData.volunteersNeeded
+                                  };
+                                  
+                                  convertToTaskMutation.mutate(customTask as any);
+                                  toast.success("AI successfully created the task details!");
+                                } catch (err: any) {
+                                  toast.error("AI Analysis failed: " + err.message);
+                                }
+                              }}
+                              className="px-6 py-2.5 bg-rose-500 text-white hover:bg-rose-600 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 active:scale-[0.97] shadow shadow-rose-500/20"
+                            >
+                               <Sparkles size={14} fill="currentColor" />
+                               Auto-Create (AI)
+                            </button>
+                            <button 
+                               onClick={() => updateStatusMutation.mutate({ id: req._id, status: 'rejected' })}
+                               className="px-6 py-2.5 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-[0.97] border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20"
+                            >
+                               Decline
+                            </button>
+                          </div>
                        )}
                        
                        {req.status === 'converted' && (
@@ -234,7 +258,7 @@ const AdminHelpRequestsPage: React.FC = () => {
                           </div>
                           {req.linkedTask && (
                             <a href={`/app/tasks`} className="px-5 py-2.5 bg-zinc-100 dark:bg-white/5 text-zinc-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-200 dark:hover:bg-white/10 transition-all flex items-center gap-2 border border-zinc-200 dark:border-white/10">
-                              Navigate to Mission <ChevronRight size={12} />
+                              Navigate to Task <ChevronRight size={12} />
                             </a>
                           )}
                           <button 

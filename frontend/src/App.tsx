@@ -4,6 +4,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { useThemeStore } from './store/useThemeStore';
 import { useAuthStore } from './store/useAuthStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import api from './services/api';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +25,7 @@ const MyAssignmentsPage = lazy(() => import('./pages/MyAssignmentsPage'));
 const AdminAssignmentPage = lazy(() => import('./pages/AdminAssignmentPage'));
 const HelpRequestPage = lazy(() => import('./pages/HelpRequestPage'));
 const AdminHelpRequestsPage = lazy(() => import('./pages/AdminHelpRequestsPage'));
+const TrackRequestPage = lazy(() => import('./pages/TrackRequestPage'));
 const MainLayout = lazy(() => import('./components/MainLayout'));
 
 const ProtectedRoute = ({ children, adminOnly = false, volunteerOnly = false }: { children: React.ReactNode; adminOnly?: boolean; volunteerOnly?: boolean }) => {
@@ -55,6 +57,41 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  const [isInitializing, setIsInitializing] = React.useState(true);
+
+  // Initial Auth Check
+  useEffect(() => {
+    const initAuth = async () => {
+      const persistedUser = useAuthStore.getState().user;
+      if (!persistedUser) {
+        setIsInitializing(false);
+        return;
+      }
+
+      try {
+        const response = await api.get('/user/refresh');
+        const tokenData = response.data.data;
+        if (tokenData && tokenData.accessToken) {
+          useAuthStore.getState().setToken(tokenData.accessToken);
+        }
+      } catch (error) {
+        console.log("Guest mode active.");
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+    initAuth();
+  }, []);
+
+  if (isInitializing) {
+    return (
+      <div className="h-screen w-screen bg-zinc-50 dark:bg-[#0a0a0a] flex flex-col items-center justify-center gap-4">
+        <div className="w-12 h-12 border-4 border-zinc-200 dark:border-white/5 border-t-zinc-900 dark:border-t-white rounded-full animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 animate-pulse">Syncing Tactical Status...</p>
+      </div>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster 
@@ -82,6 +119,7 @@ const App: React.FC = () => {
 
             <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
             <Route path="/request-help" element={<HelpRequestPage />} />
+            <Route path="/track" element={<TrackRequestPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

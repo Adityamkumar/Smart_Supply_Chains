@@ -10,11 +10,9 @@ interface JwtPayloadType {
 
 export const verifyJwt = asyncHandler(async (req, _, next) => {
   try {
-    const token =
-      req.cookies?.accessToken ||
-      req.header("authorization")?.replace("Bearer ", "");
+    const token = req.header("Authorization")?.replace("Bearer ", "");
 
-      if (!token) {
+    if (!token) {
       throw new ApiError(401, "Unauthorized request");
     }
 
@@ -27,8 +25,10 @@ export const verifyJwt = asyncHandler(async (req, _, next) => {
       token,
       process.env.ACCESS_TOKEN_SECRET!,
     ) as JwtPayloadType;
+    
+    // Note: fixed typo 'passowrd' -> 'password' if it existed
     const user = await User.findById(decodedToken?._id).select(
-      "-passowrd -refreshToken",
+      "-password -refreshToken",
     );
 
     if (!user) {
@@ -38,6 +38,6 @@ export const verifyJwt = asyncHandler(async (req, _, next) => {
     req.user = user;
     next();
   } catch (error) {
-    throw new ApiError(401, "Invalid accesss token");
+    throw new ApiError(401, "Invalid access token");
   }
 });

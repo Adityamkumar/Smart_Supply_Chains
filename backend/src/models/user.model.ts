@@ -19,6 +19,8 @@ export interface IUser extends Document {
   generateRefreshToken(): string
   isPasswordCorrect(enteredPassword: string):Promise<boolean>
   rating: number;
+  sumOfRatings: number;
+  totalRatings: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -78,6 +80,14 @@ const userSchema = new Schema<IUser>(
     },
 
     rating: {
+      type: Number,
+      default: 0,
+    },
+    sumOfRatings: {
+      type: Number,
+      default: 0,
+    },
+    totalRatings: {
       type: Number,
       default: 0,
     },

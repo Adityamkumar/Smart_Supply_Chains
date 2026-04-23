@@ -103,16 +103,21 @@ const HelpRequestPage: React.FC = () => {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-widest text-zinc-500 flex items-center gap-1.5 pl-1">
-              <MessageSquare size={14} /> Problem Description
-            </label>
+            <div className="flex justify-between items-end pr-1">
+              <label className="text-xs font-semibold uppercase tracking-widest text-zinc-500 flex items-center gap-1.5 pl-1">
+                <MessageSquare size={14} /> Problem Description
+              </label>
+              <span className="text-[10px] font-medium text-rose-500/80 dark:text-rose-400/80 uppercase tracking-tighter bg-rose-500/5 px-1.5 py-0.5 rounded border border-rose-500/10">
+                AI Multi-Language Support (Hindi/English)
+              </span>
+            </div>
             <textarea
               required
               rows={4}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full px-4 py-3 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 focus:ring-1 focus:ring-rose-500 focus:border-rose-500 rounded-xl outline-none transition-all dark:text-white text-sm resize-none"
-              placeholder="Tell us what kind of help you need..."
+              placeholder="Tell us what kind of help you need. Feel free to write in Hindi or your local language — our AI will understand."
             />
           </div>
 

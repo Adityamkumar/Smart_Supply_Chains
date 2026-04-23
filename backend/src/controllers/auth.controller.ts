@@ -1,18 +1,17 @@
 import jwt from 'jsonwebtoken'
 import { User } from "../models/user.model.js";
-import { redis } from "../config/redis.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { generateAccessTokenAndRefreshToken } from "../utils/generateToken.js";
 import {
-  accessCookieOptions,
   refreshCookieOptions,
   clearCookieOptions,
 } from "../config/cookie.config.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { Rating } from "../models/rating.model.js";
 
 export const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, skills, location } = req.body;
+  const { name, email, password, skills, location, address } = req.body;
 
   if (!name || !email || !password) {
     throw new ApiError(400, "All fields are required");
@@ -29,6 +28,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     password,
     skills,
     location,
+    address
   });
 
   const createdUser = await User.findById(user._id).select(
@@ -76,7 +76,6 @@ export const loginUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("accessToken", accessToken, accessCookieOptions)
     .cookie("refreshToken", refreshToken, refreshCookieOptions)
     .json(
       new ApiResponse(
@@ -91,71 +90,62 @@ export const loginUser = asyncHandler(async (req, res) => {
 });
 
 export const logoutUser = asyncHandler(async (req, res) => {
-  // const token = req.cookies?.accessToken || req.header("authorization")?.replace("Bearer ", "");
-  // if (token) {
-  //   try {
-  //     const decoded: any = jwt.decode(token);
-  //     if (decoded && decoded.exp) {
-  //       const currentTime = Math.floor(Date.now() / 1000);
-  //       const expiryTime = decoded.exp - currentTime;
-  //       if (expiryTime > 0) {
-  //         await redis.set(`blacklist:${token}`, "1", "EX", expiryTime);
-  //       }
-  //     }
-  //   } catch (e) {}
-  // }
+  if (req.user?._id) {
+    await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $unset: {
+          refreshToken: 1
+        }
+      },
+      { new: true }
+    );
+  }
 
-  await User.findByIdAndUpdate(
-    req.user._id,
-    {
-       $unset:{
-         refreshToken: 1
-       }
-    },
-    {
-       new: true
-    }
-  )
   return res
     .status(200)
-    .clearCookie("accessToken", clearCookieOptions)
     .clearCookie("refreshToken", clearCookieOptions)
+    .clearCookie("accessToken", clearCookieOptions)
     .json(new ApiResponse(200, {}, "User Logged out successfully"));
 });
 
 export const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken =
-    req.cookies.refreshToken || req.body.refreshToken;
-
-  if (!incomingRefreshToken) {
-    throw new ApiError(401, "Unauthorized request");
-  }
-
   try {
-    const decodedToken = jwt.verify(
-      incomingRefreshToken,
-      process.env.REFRESH_TOKEN_SECRET!
-    );
+    const incomingRefreshToken =
+      req.cookies.refreshToken || req.body.refreshToken;
 
-    const user = await User.findById((decodedToken as jwt.JwtPayload)._id);
-    if (!user) {
-      throw new ApiError(401, "Invalid refresh Token");
+    // 1. Check if token exists and is a valid string (not "undefined" or "null" from localstorage bugs)
+    if (!incomingRefreshToken || incomingRefreshToken === "undefined" || incomingRefreshToken === "null") {
+      return res.status(200).json(new ApiResponse(200, null, "No refresh token found. Silent skip."));
     }
 
-    if (incomingRefreshToken !== user?.refreshToken) {
-      throw new ApiError(401, "Refresh token is expired or used");
+    // 2. Verify JWT
+    let decodedToken: any;
+    try {
+      decodedToken = jwt.verify(
+        incomingRefreshToken,
+        process.env.REFRESH_TOKEN_SECRET!
+      );
+    } catch (jwtErr) {
+      return res.status(200).clearCookie("refreshToken", clearCookieOptions).json(new ApiResponse(200, null, "Session expired"));
     }
 
-    const { accessToken, refreshToken:newRefreshToken } =
-      await generateAccessTokenAndRefreshToken(user._id.toString());
+    // 3. Find User
+    const user = await User.findById(decodedToken?._id);
+    if (!user || incomingRefreshToken !== user?.refreshToken) {
+       return res.status(200).clearCookie("refreshToken", clearCookieOptions).json(new ApiResponse(200, null, "Invalid session"));
+    }
+
+    // 4. Generate only new access token (Keep existing refresh token to avoid race conditions on rapid refresh)
+    const accessToken = user.generateAccessToken();
 
     return res
       .status(200)
-      .cookie("accessToken", accessToken, accessCookieOptions)
-      .cookie("refreshToken", newRefreshToken, refreshCookieOptions)
-      .json(new ApiResponse(200, {accessToken, newRefreshToken}, "Access token is Refreshed"));
-  } catch (error) {
-    throw new ApiError(401,"Invalid refresh token");
+      .json(new ApiResponse(200, { accessToken }, "Session refreshed"));
+      
+  } catch (error: any) {
+    console.error("Refresh Error:", error.message);
+    return res.status(200).json(new ApiResponse(200, null, "Authentication failed. Clear session."));
   }
 });
 
@@ -179,4 +169,50 @@ export const updateProfile = asyncHandler(async (req, res) => {
   }
 
   return res.json(new ApiResponse(200, user, "Profile updated successfully"));
+});
+
+export const getAllVolunteers = asyncHandler(async (req, res) => {
+  const volunteers = await User.find({ role: 'volunteer' }).select("-password -refreshToken");
+  return res.json(new ApiResponse(200, volunteers, "Volunteers fetched successfully"));
+});
+
+export const rateVolunteer = asyncHandler(async (req, res) => {
+  const { volunteerId, rating } = req.body;
+  const voterId = req.user?._id?.toString() || req.ip || "anonymous";
+
+  if (!volunteerId || rating === undefined) {
+    throw new ApiError(400, "Volunteer ID and rating are required");
+  }
+
+  const volunteer = await User.findById(volunteerId);
+  if (!volunteer || volunteer.role !== "volunteer") {
+    throw new ApiError(404, "Volunteer not found");
+  }
+
+  // 1. Upsert the rating (Update if exists, otherwise create)
+  await Rating.findOneAndUpdate(
+    { volunteerId, voterId },
+    { rating: Number(rating) },
+    { upsert: true, new: true }
+  );
+
+  // 2. Recalculate average (Most accurate method)
+  const allRatings = await Rating.find({ volunteerId });
+  const count = allRatings.length;
+  const sum = allRatings.reduce((acc, curr) => acc + curr.rating, 0);
+  const average = sum / count;
+
+  const updatedVolunteer = await User.findByIdAndUpdate(
+    volunteerId,
+    {
+      $set: {
+        sumOfRatings: sum,
+        totalRatings: count,
+        rating: Math.round(average * 10) / 10,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  return res.json(new ApiResponse(200, updatedVolunteer, "Rating updated successfully"));
 });

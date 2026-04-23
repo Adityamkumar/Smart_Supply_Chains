@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ListTodo, ClipboardCheck, ShieldCheck, MapPin, X, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, ListTodo, ClipboardCheck, ShieldCheck, MapPin, X, MessageSquare, Users } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -76,13 +76,26 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
         </div>
 
         <div className="w-full p-6 border-t border-black/5 dark:border-white/5">
-           <div className="flex flex-col gap-1.5">
-             <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-zinc-400 dark:text-zinc-500">
-                <MapPin size={12} className="text-zinc-900 dark:text-white" />
-                <span>Station</span>
-             </div>
-              <div className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 line-clamp-2 leading-tight">
-                 {user?.address || 'Deployment Base: Active'}
+           <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-zinc-50 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-center shrink-0">
+                 {isAdmin ? (
+                   <ShieldCheck size={20} className="text-rose-500" />
+                 ) : (
+                   <div className="w-full h-full flex items-center justify-center text-xs font-black text-zinc-400">
+                     {user?.name?.[0] || 'V'}
+                   </div>
+                 )}
+              </div>
+              <div className="min-w-0">
+                 <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate leading-none mb-1">
+                   {user?.name || 'Authorized User'}
+                 </p>
+                 <div className="flex items-center gap-1.5">
+                    <div className={cn("w-1 h-1 rounded-full", isAdmin ? "bg-rose-500" : "bg-emerald-500")} />
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+                      {user?.role}
+                    </p>
+                 </div>
               </div>
            </div>
         </div>

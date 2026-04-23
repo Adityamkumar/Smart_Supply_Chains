@@ -140,6 +140,8 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [isTriaging, setIsTriaging] = useState(false);
+  const [rawReport, setRawReport] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
   const [formData, setFormData] = useState({
     title: '',
@@ -173,10 +175,11 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         try {
-          const response = await api.get(`/location/reverse-geocode?lat=${latitude}&lng=${longitude}`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
           setFormData({
             ...formData,
-            address: response.data.data.address,
+            address: data.display_name,
             coordinates: [longitude, latitude]
           });
           toast.success('Location synchronized');
@@ -197,18 +200,67 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
     if (!searchLocation.trim()) return;
     setIsLocating(true);
     try {
-      const response = await api.get(`/location/geocode?address=${encodeURIComponent(searchLocation)}`);
-      const { address, coordinates } = response.data.data;
-      setFormData({
-        ...formData,
-        address,
-        coordinates: coordinates.coordinates
-      });
-      toast.success('Location identified');
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchLocation)}&limit=1`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        setFormData({
+            ...formData,
+            address: data[0].display_name,
+            coordinates: [parseFloat(data[0].lon), parseFloat(data[0].lat)]
+        });
+        toast.success('Location identified');
+      } else {
+        toast.error('Location not found');
+      }
     } catch (err) {
-      toast.error('Location not found');
+      toast.error('Geocoding service unavailable');
     } finally {
       setIsLocating(false);
+    }
+  };
+
+  const handleAiTriage = async () => {
+    if (!rawReport.trim() || rawReport.length < 10) {
+      return toast.error('Please provide a more detailed report for AI analysis');
+    }
+
+    setIsTriaging(true);
+    try {
+      const response = await api.post('/assign/ai/triage', { rawText: rawReport });
+      const data = response.data.data;
+      
+      setFormData({
+        ...formData,
+        title: data.title || formData.title,
+        description: data.description || formData.description,
+        volunteersNeeded: data.volunteersNeeded || formData.volunteersNeeded,
+        priority: (data.priority as TaskPriority) || formData.priority,
+        requiredSkills: data.requiredSkills || formData.requiredSkills,
+        address: data.address || formData.address
+      });
+
+      if (data.address) {
+        setSearchLocation(data.address);
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(data.address)}&limit=1`);
+          const geoData = await res.json();
+          if (geoData && geoData.length > 0) {
+            setFormData(prev => ({
+                ...prev,
+                coordinates: [parseFloat(geoData[0].lon), parseFloat(geoData[0].lat)]
+            }));
+          }
+        } catch (e) {
+          console.warn('AI address extraction succeeded but geocoding lookup failed');
+        }
+      }
+
+      toast.success('AI Triage complete. Form updated.');
+      setRawReport('');
+    } catch (error: any) {
+      toast.error(error.message || 'AI Triage failed');
+    } finally {
+      setIsTriaging(false);
     }
   };
 
@@ -252,15 +304,40 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
         >
            <div className="p-8 border-b border-zinc-100 dark:border-white/5 flex items-center justify-between bg-zinc-50/50 dark:bg-white/[0.02]">
               <div>
-                 <h2 className="text-2xl font-light text-zinc-900 dark:text-white">Create Strategic <span className="font-semibold">Mission</span></h2>
-                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mt-1">Operational Directive Protocol</p>
+                  <h2 className="text-2xl font-light text-zinc-900 dark:text-white">Create New <span className="font-semibold">Task</span></h2>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mt-1">Fill details for others to help</p>
               </div>
               <button onClick={onClose} className="p-3 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-2xl transition-all text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
                  <X size={20} />
               </button>
            </div>
 
-           <form onSubmit={handleCreate} className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <div className="px-8 pt-8 pb-4 bg-indigo-500/5 dark:bg-white/5 border-b border-zinc-200 dark:border-white/5">
+                <div className="flex items-center gap-2 mb-4">
+                    <Sparkles size={16} className="text-indigo-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Quick Auto-Fill (AI Powered)</span>
+                </div>
+                <div className="flex gap-3">
+                    <textarea 
+                        value={rawReport}
+                        onChange={(e) => setRawReport(e.target.value)}
+                        placeholder="Paste raw emergency report, tweet, or transcript here..."
+                        className="flex-1 px-4 py-3 bg-white dark:bg-black border border-zinc-200 dark:border-white/10 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-indigo-500 transition-all resize-none h-20"
+                    />
+                    <button 
+                        type="button"
+                        onClick={handleAiTriage}
+                        disabled={isTriaging}
+                        className="px-6 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all flex flex-col items-center justify-center gap-2 disabled:opacity-50 min-w-[120px]"
+                    >
+                        {isTriaging ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+                        Analyze
+                    </button>
+                </div>
+                <p className="text-[9px] text-zinc-400 mt-3 italic">AI will automatically extract title, description, priority, skills, and location.</p>
+            </div>
+
+            <form onSubmit={handleCreate} className="p-8 space-y-8 max-h-[50vh] overflow-y-auto custom-scrollbar">
               <div className="space-y-3">
                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Mission Title</label>
                  <input 
@@ -273,7 +350,7 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
               </div>
 
               <div className="space-y-3">
-                 <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Intelligence Briefing</label>
+                 <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Task Summary</label>
                  <textarea 
                    required rows={4}
                    value={formData.description}
@@ -285,7 +362,7 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
 
               <div className="grid grid-cols-2 gap-8">
                  <div className="space-y-3">
-                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Required Units</label>
+                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Volunteers Needed</label>
                    <input 
                      type="number" min="1" required
                      value={formData.volunteersNeeded}
@@ -294,7 +371,7 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
                    />
                  </div>
                  <div className="space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sector Priority</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Urgency Level</label>
                     <select 
                       value={formData.priority}
                       onChange={(e) => setFormData({...formData, priority: e.target.value as any})}
@@ -330,7 +407,7 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
 
               <div className="space-y-5 pt-6 border-t border-zinc-100 dark:border-white/5">
                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Deployment Coordinates</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Task Location</label>
                     <button 
                       type="button" 
                       disabled={isLocating}
@@ -373,8 +450,8 @@ const CreateTaskModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
                    Create Task Now
                  </button>
               </div>
-           </form>
-        </motion.div>
+            </form>
+         </motion.div>
     </div>
   );
 };
@@ -406,6 +483,15 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task marked as completed');
+      onClose();
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/task/${task._id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Mission purged from tactical database');
       onClose();
     }
   });
@@ -444,11 +530,25 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
                  <div>
                     <h2 className="text-2xl font-light text-zinc-900 dark:text-white leading-none mb-2">{task.title}</h2>
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                      {task.status === 'completed' ? "Task History Record" : "View Task Details"}
+                      {task.status === 'completed' ? "Task History" : "View Task Information"}
                     </p>
                  </div>
               </div>
               <div className="flex items-center gap-4">
+                 {isAdmin && (
+                    <button 
+                      onClick={() => {
+                        if (window.confirm("CRITICAL: This will permanently purge this mission and all associated assignments. Proceed?")) {
+                          deleteMutation.mutate();
+                        }
+                      }}
+                      disabled={deleteMutation.isPending}
+                      className="p-3 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all flex items-center gap-2 border border-rose-500/20 active:scale-95 disabled:opacity-50"
+                      title="Purge Strategic Task"
+                    >
+                       <Trash2 size={18} />
+                    </button>
+                 )}
                  {isAdmin && task.status !== 'completed' && allSubTasksFinished && (
                     <button 
                       onClick={() => completeTaskMutation.mutate()}
@@ -471,7 +571,7 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
                     <div className="space-y-6">
                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
                           <Shield size={14} className="text-zinc-300" />
-                          Strategic Briefing
+                          Task Summary
                        </h4>
                        <p className="text-zinc-600 dark:text-zinc-300 text-base leading-relaxed font-light italic">
                           "{task.description}"
@@ -525,7 +625,7 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
                     <div className="flex items-center justify-between">
                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
                           <UserIcon size={14} className="text-zinc-300" />
-                          Personnel Roster
+                          Assigned Volunteers
                        </h4>
                        <span className="text-[10px] font-black tracking-widest text-zinc-900 dark:text-white px-3 py-1 bg-zinc-100 dark:bg-white/10 rounded-full border border-zinc-200 dark:border-white/10">
                           {assignments.length} / {task.volunteersNeeded} Units
@@ -582,7 +682,7 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
                        <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/5 dark:to-purple-500/5 p-8 rounded-[2rem] border border-indigo-500/20 dark:border-indigo-500/10 relative overflow-hidden">
                           <h5 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
                              <Sparkles size={12} className="text-indigo-400" />
-                             AI Commander Insight
+                             AI Recommendation
                           </h5>
                           <p className="text-sm font-light leading-relaxed italic text-zinc-600 dark:text-zinc-300">
                              "Optimal team matching identifies qualified responders based on {task.requiredSkills.slice(0,2).join(', ')} precision analytics."

@@ -77,7 +77,7 @@ const LandingPage: React.FC = () => {
                VolunSync uses smart technology to find and connect volunteers to people who need help instantly. Get the right help, right when you need it.
             </motion.p>
 
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
                <button 
                  onClick={() => navigate('/register')}
                  className="w-full sm:w-auto px-8 py-3.5 bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 font-semibold rounded-lg shadow-sm active:scale-95 transition-all text-sm flex items-center justify-center gap-2 group"
@@ -91,6 +91,13 @@ const LandingPage: React.FC = () => {
                >
                   Get Help Now
                </button>
+               <button 
+                  onClick={() => navigate('/track')}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 hover:border-zinc-300 dark:hover:border-white/20 text-zinc-900 dark:text-white font-semibold rounded-lg shadow-sm transition-all text-sm flex items-center justify-center gap-2 group"
+                >
+                   <Activity size={16} className="text-zinc-400 group-hover:text-rose-500 transition-colors" />
+                   Track & Rate Signals
+                </button>
             </motion.div>
          </motion.div>
 
@@ -135,8 +142,8 @@ const LandingPage: React.FC = () => {
                ].map(benefit => (
                  <div key={benefit.title} className="flex-1 min-w-[250px] p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/5 rounded-xl shadow-sm dark:shadow-none transition-colors duration-300">
                     <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle size={16} className="text-zinc-900 dark:text-white" />
-                      <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{benefit.title}</h4>
+                       <CheckCircle size={16} className="text-zinc-900 dark:text-white" />
+                       <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{benefit.title}</h4>
                     </div>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed font-light">{benefit.desc}</p>
                  </div>

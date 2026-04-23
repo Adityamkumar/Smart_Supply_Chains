@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import type { Task, Assignment } from '../types';
-import { Shield, Loader2, Sparkles, AlertCircle, User as UserIcon, Check, ListChecks, Play, Trash2, XOctagon, MapPin, Zap } from 'lucide-react';
+import { Shield, Loader2, Sparkles, AlertCircle, User as UserIcon, Check, ListChecks, Play, Trash2, XOctagon, MapPin, Zap, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -270,6 +270,54 @@ const AdminAssignmentPage: React.FC = () => {
   );
 };
 
+const RatingSection: React.FC<{ volunteerId: string, currentRating: number }> = ({ volunteerId, currentRating }) => {
+  const [hover, setHover] = useState(0);
+  const [rating, setRating] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRate = async (value: number) => {
+    setRating(value);
+    setIsSubmitting(true);
+    try {
+      await api.post('/user/rate-volunteer', { volunteerId, rating: value });
+      toast.success('Performance Rating Submitted');
+    } catch (error) {
+      toast.error('Failed to submit rating');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="pt-4 border-t border-zinc-100 dark:border-white/5 space-y-2">
+       <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Tactical Performance Rating</p>
+       <div className="flex items-center gap-1.5">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              disabled={isSubmitting}
+              onMouseEnter={() => setHover(star)}
+              onMouseLeave={() => setHover(0)}
+              onClick={() => handleRate(star)}
+              className="transition-all active:scale-90 disabled:opacity-50"
+            >
+               <Star 
+                 size={14} 
+                 className={clsx(
+                   "transition-colors",
+                   (hover || rating) >= star 
+                     ? "text-amber-500 fill-amber-500" 
+                     : "text-zinc-200 dark:text-zinc-800"
+                 )} 
+               />
+            </button>
+          ))}
+          {rating > 0 && <span className="text-[10px] font-bold text-zinc-400 ml-2">Rating Locked</span>}
+       </div>
+    </div>
+  );
+};
+
 const AIResultCard: React.FC<{assignment: Assignment; onRevoke: (aid: string) => void, index: number}> = ({ assignment, onRevoke, index }) => {
   const volunteer = assignment.volunteer as any;
   const isTooFar = (assignment as any).isTooFar;
@@ -317,6 +365,8 @@ const AIResultCard: React.FC<{assignment: Assignment; onRevoke: (aid: string) =>
             />
          </div>
       </div>
+
+      <RatingSection volunteerId={volunteer?._id} currentRating={volunteer?.rating || 0} />
 
       <div className="flex flex-wrap gap-1.5">
          {volunteer.skills?.map((s: string) => (

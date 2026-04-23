@@ -45,7 +45,6 @@ export const deleteTask = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Task not found");
     }
 
-
     await Assignment.deleteMany({ task: taskId });
     await task.deleteOne();
 
@@ -107,7 +106,6 @@ export const getAllTasks = asyncHandler(async (req, res) => {
 });
 
 export const getOpenTasks = asyncHandler(async (req, res) => {
-
     const tasks = await Task.aggregate([
         {
           $lookup: {

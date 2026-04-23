@@ -1,7 +1,7 @@
 import { Assignment, type IAssignment } from "../models/assignment.model.js";
 import { Task } from "../models/task.model.js";
 import { User } from "../models/user.model.js";
-import { getAIScore } from "../services/ai.service.js";
+import { getAIScore, extractTaskFromText } from "../services/ai.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -20,10 +20,8 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
     status: { $ne: "rejected" }
   });
 
-
   const skillRegexes = (task.requiredSkills || []).map(skill => new RegExp(skill.trim(), 'i'));
 
-  // 1. Find ALL available volunteers
   let allAvailableVolunteers = await User.find({
     role: "volunteer",
     availability: true
@@ -33,7 +31,6 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
   const suggestions: any[] = [];
   let successfulAssignmentsCount = 0;
 
-  // Process and sort by distance/match
   const processedVolunteers = allAvailableVolunteers.map(volunteer => {
       const distance = calculateDistance(
           task.location.coordinates,
@@ -52,7 +49,6 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
       };
   });
 
-  // Sort: Nearby + Skills first, then Nearby, then Global Skills
   processedVolunteers.sort((a, b) => {
       if (a.isNearby && a.matchesSkills && !(b.isNearby && b.matchesSkills)) return -1;
       if (!(a.isNearby && a.matchesSkills) && b.isNearby && b.matchesSkills) return 1;
@@ -84,7 +80,6 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
        continue;
     }
 
-    // AI Scoring
     const cacheKey = `ai:${task._id}:${volunteer._id}`;
     let aiResult;
     const cachedAi = await redis.get(cacheKey);
@@ -95,7 +90,6 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
       await redis.set(cacheKey, JSON.stringify(aiResult), "EX", 900);
     }
 
-    // Auto-assign Logic: Strictly within 10km AND has capacity
     if (isNearby && (currentAssignmentsCount + successfulAssignmentsCount < task.volunteersNeeded)) {
       const assignment = await Assignment.create({
         task: task._id,
@@ -112,7 +106,6 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
       assignments.push(assignmentWithDist);
       successfulAssignmentsCount++;
     } else {
-      // Add to suggestions pool
       suggestions.push({
         volunteer,
         aiScore: aiResult.score || 0.4,
@@ -133,4 +126,16 @@ export const autoAssignVolunteers = asyncHandler(async (req, res) => {
       assignments, 
       suggestions: suggestions.slice(0, 15) 
   }, "Best matches found"));
+});
+
+export const triageTask = asyncHandler(async (req, res) => {
+    const { rawText } = req.body;
+    
+    if (!rawText || rawText.trim().length < 10) {
+        throw new ApiError(400, "Please provide a more detailed emergency report for AI analysis.");
+    }
+
+    const taskData = await extractTaskFromText(rawText);
+
+    return res.json(new ApiResponse(200, taskData, "AI analysis complete. Report triangulated."));
 });

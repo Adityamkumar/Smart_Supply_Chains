@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import { verifyJwt } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 import {
@@ -7,6 +8,9 @@ import {
   updateHelpRequestStatus,
   deleteHelpRequest,
 } from "../controllers/helpRequest.controller.js";
+import { HelpRequest } from "../models/helpRequest.model.js";
+import { Assignment } from "../models/assignment.model.js";
+import { Task } from "../models/task.model.js";
 
 import { helpRequestLimiter } from "../middleware/rateLimiter.middleware.js";
 
@@ -17,6 +21,30 @@ router.post("/", helpRequestLimiter, createHelpRequest);
 
 
 router.get("/all", verifyJwt, authorizeRoles("admin"), getAllHelpRequests);
+router.get("/track/:phone", helpRequestLimiter, async (req, res) => {
+  try {
+    const { phone } = req.params;
+    const requests = await HelpRequest.find({ phone }).sort({ createdAt: -1 });
+    
+    const results = await Promise.all(requests.map(async (request) => {
+      let volunteers = [];
+      if (request.linkedTask) {
+        const assignments = await Assignment.find({ task: request.linkedTask }).populate('volunteer', 'name _id rating');
+        volunteers = assignments
+          .filter((a: any) => a.volunteer)
+          .map((a: any) => a.volunteer);
+      }
+      return { 
+        ...request.toObject(), 
+        assignedVolunteers: volunteers 
+      };
+    }));
+
+    res.json({ statusCode: 200, data: results, message: "Fetched requests", success: true });
+  } catch (error: any) {
+    res.status(500).json({ statusCode: 500, message: error.message, success: false });
+  }
+});
 router.patch("/:requestId", verifyJwt, authorizeRoles("admin"), updateHelpRequestStatus);
 router.delete("/:requestId", verifyJwt, authorizeRoles("admin"), deleteHelpRequest);
 

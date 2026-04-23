@@ -1,72 +1,65 @@
 import express from "express";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
+
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || true, 
+  credentials: true,
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser())
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import userRouter from "./routes/user.route.js";
 app.use("/api/user", userRouter);
-
 
 import taskRouter from "./routes/task.route.js";
 app.use("/api/task", taskRouter);
 
-
 import assignVolunteerRouter from './routes/assignTask.route.js'
 app.use('/api/assignVolunteer', assignVolunteerRouter)
-
 
 import aiRoutes from "./routes/ai.route.js";
 app.use("/api/assign/ai", aiRoutes);
 
-
 import helpRequestRouter from "./routes/helpRequest.route.js";
 app.use("/api/help-requests", helpRequestRouter);
 
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, "../../frontend/dist");
+  app.use(express.static(frontendPath));
 
-app.get("/", (req, res) => {
-  res.send("Hello Welcome to my App");
-});
-
+  app.get("*", (req, res) => {
+    if (!req.url.startsWith('/api')) {
+      res.sendFile(path.join(frontendPath, "index.html"));
+    } else {
+      res.status(404).json({ message: "API endpoint not found" });
+    }
+  });
+} else {
+  app.get("/", (req, res) => {
+    res.send("Strategic API Backend is Live (Development Mode)");
+  });
+}
 
 import { ApiError } from "./utils/ApiError.js";
 
 app.use((err: any, req: any, res: any, next: any) => {
-  if (err instanceof ApiError) {
-    return res.status(err.statusCode).json({
-      success: false,
-      message: err.message,
-      errors: err.errors,
-    });
-  }
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
 
-
-  return res.status(500).json({
+  return res.status(statusCode).json({
     success: false,
-    message: err.message || "Internal Server Error",
+    message,
+    errors: err.errors || [],
   });
 });
 

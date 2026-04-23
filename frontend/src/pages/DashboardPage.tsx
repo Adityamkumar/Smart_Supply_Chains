@@ -11,7 +11,8 @@ import {
   Clock,
   CheckCircle,
   Users,
-  Sparkles
+  Sparkles,
+  Star
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,14 +29,24 @@ const DashboardPage: React.FC = () => {
       try {
         const response = await api.get('/user/stats');
         setStats(response.data.data);
+        
+        // If address is missing, try to reverse geocode it automatically
+        if (!user?.address && user?.location?.coordinates) {
+          const [lng, lat] = user.location.coordinates;
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const geoData = await geoRes.json();
+          if (geoData?.display_name) {
+            updateUser({ ...user, address: geoData.display_name });
+          }
+        }
       } catch (error) {
-        console.error('Failed to fetch stats', error);
+        console.error('Failed to fetch stats/address', error);
       } finally {
         setLoading(false);
       }
     };
     fetchStats();
-  }, []);
+  }, [user?.address]);
 
   const toggleAvailability = async () => {
     try {
@@ -148,20 +159,40 @@ const DashboardPage: React.FC = () => {
                       <MapPin size={16} />
                    </div>
                    <p className="text-sm font-light text-zinc-600 dark:text-zinc-300 leading-relaxed max-w-[200px]">
-                     {user.address || 'Location not provided'}
+                     {user.address || 'Resolving location...'}
                    </p>
                 </div>
              </div>
 
              <div className="space-y-4">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-400">Rating</p>
-                <div className="flex items-center gap-3">
-                   <div className="flex items-center gap-1.5">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className={clsx("w-6 h-1 rounded-full transition-colors", i < user.rating ? "bg-zinc-900 dark:bg-white" : "bg-zinc-100 dark:bg-white/10")} />
-                      ))}
+                <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-400">Tactical Ranking</p>
+                <div className="flex flex-col gap-1.5">
+                   <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const rating = user.rating || 0;
+                        const active = rating >= star;
+                        const partial = !active && rating > star - 1;
+                        
+                        return (
+                          <div key={star} className="relative">
+                             <Star 
+                               size={16} 
+                               className={clsx(
+                                 "transition-all duration-300",
+                                 active ? "text-amber-500 fill-amber-500" : "text-zinc-100 dark:text-zinc-800"
+                               )} 
+                             />
+                             {partial && (
+                               <div className="absolute top-0 left-0 overflow-hidden pointer-events-none" style={{ width: `${(rating % 1) * 100}%` }}>
+                                  <Star size={16} className="text-amber-500 fill-amber-500" />
+                               </div>
+                             )}
+                          </div>
+                        );
+                      })}
+                      <span className="ml-3 text-lg font-black text-zinc-900 dark:text-white leading-none">{(user.rating || 0).toFixed(1)}</span>
                    </div>
-                   <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">{(user.rating || 0).toFixed(1)}</span>
+                   <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Verified Performance</p>
                 </div>
              </div>
 
@@ -178,11 +209,25 @@ const DashboardPage: React.FC = () => {
         <div className="flex flex-col gap-5">
            <AnimatePresence mode="wait">
              {loading ? (
-               [1, 2, 3].map(i => (
-                 <div key={i} className="h-32 bg-white dark:bg-[#121212] rounded-2xl border border-zinc-200 dark:border-white/5 animate-pulse" />
-               ))
+               <motion.div 
+                 key="loading"
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 className="flex flex-col gap-5"
+               >
+                 {[1, 2, 3].map(i => (
+                   <div key={i} className="h-32 bg-white dark:bg-[#121212] rounded-2xl border border-zinc-200 dark:border-white/5 animate-pulse" />
+                 ))}
+               </motion.div>
              ) : (
-               <>
+               <motion.div 
+                 key="content"
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 className="flex flex-col gap-5"
+               >
                  {isAdmin ? (
                    <>
                      <StatCard 
@@ -222,7 +267,7 @@ const DashboardPage: React.FC = () => {
                      />
                    </>
                  )}
-               </>
+               </motion.div>
              )}
            </AnimatePresence>
         </div>
