@@ -10,7 +10,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 app.use(cors({
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : true,
+  origin: process.env.NODE_ENV === "development" 
+    ? true 
+    : (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : true),
   credentials: true,
 }));
 
