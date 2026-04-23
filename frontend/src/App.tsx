@@ -22,6 +22,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const MyAssignmentsPage = lazy(() => import('./pages/MyAssignmentsPage'));
+const RatingsPage = lazy(() => import('./pages/RatingsPage'));
 const AdminAssignmentPage = lazy(() => import('./pages/AdminAssignmentPage'));
 const HelpRequestPage = lazy(() => import('./pages/HelpRequestPage'));
 const AdminHelpRequestsPage = lazy(() => import('./pages/AdminHelpRequestsPage'));
@@ -113,6 +114,7 @@ const App: React.FC = () => {
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="tasks" element={<TasksPage />} />
               <Route path="my-assignments" element={<ProtectedRoute volunteerOnly><MyAssignmentsPage /></ProtectedRoute>} />
+              <Route path="ratings" element={<ProtectedRoute volunteerOnly><RatingsPage /></ProtectedRoute>} />
               <Route path="admin-assignment" element={<ProtectedRoute adminOnly><AdminAssignmentPage /></ProtectedRoute>} />
               <Route path="admin-help-requests" element={<ProtectedRoute adminOnly><AdminHelpRequestsPage /></ProtectedRoute>} />
             </Route>

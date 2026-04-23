@@ -10,7 +10,8 @@ import {
   CheckCircle,
   Users,
   Sparkles,
-  Star
+  Star,
+  Loader2
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,15 +27,23 @@ const DashboardPage: React.FC = () => {
     const fetchStats = async () => {
       try {
         const response = await api.get('/user/stats');
-        setStats(response.data.data);
+        const statsData = response.data.data;
+        setStats(statsData);
         
-        // If address is missing, try to reverse geocode it automatically
+        // Sync local user rating with real-time backend data
+        if (statsData.actualRating !== undefined) {
+           updateUser({ 
+             ...user!, 
+             rating: statsData.actualRating,
+             totalRatings: statsData.actualTotalRatings 
+           });
+        }
+        
         if (!user?.address && user?.location?.coordinates) {
           const [lng, lat] = user.location.coordinates;
-          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-          const geoData = await geoRes.json();
-          if (geoData?.display_name) {
-            updateUser({ ...user, address: geoData.display_name });
+          const reverseResponse = await api.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          if (reverseResponse.data.display_name) {
+             updateUser({ ...user!, address: reverseResponse.data.display_name });
           }
         }
       } catch (error) {
@@ -72,7 +81,7 @@ const DashboardPage: React.FC = () => {
               isAdmin ? "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400" : "bg-zinc-100 border-zinc-200 text-zinc-600 dark:bg-white/5 dark:border-white/10 dark:text-zinc-400"
             )}>
               <Shield size={10} className={isAdmin ? "text-rose-500" : "text-zinc-500"} />
-              {user.role} Authority
+              {user.role === 'admin' ? 'Administrator' : 'Volunteer'}
             </div>
             <h1 className="text-4xl font-light tracking-tight text-zinc-900 dark:text-white leading-tight">
                Welcome back, <span className="font-semibold text-black dark:text-zinc-100">{isAdmin ? 'Admin' : (user.name?.split(' ')[0] || 'Responder')}</span>.
@@ -163,7 +172,7 @@ const DashboardPage: React.FC = () => {
              </div>
 
              <div className="space-y-4">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-400">Tactical Ranking</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-400">Average Rating</p>
                 <div className="flex flex-col gap-1.5">
                    <div className="flex items-center gap-0.5">
                       {[1, 2, 3, 4, 5].map((star) => {
@@ -174,11 +183,11 @@ const DashboardPage: React.FC = () => {
                         return (
                           <div key={star} className="relative">
                              <Star 
-                               size={16} 
-                               className={clsx(
-                                 "transition-all duration-300",
-                                 active ? "text-amber-500 fill-amber-500" : "text-zinc-100 dark:text-zinc-800"
-                               )} 
+                                size={16} 
+                                className={clsx(
+                                  "transition-all duration-300",
+                                  active ? "text-amber-500 fill-amber-500" : "text-zinc-100 dark:text-zinc-800"
+                                )} 
                              />
                              {partial && (
                                <div className="absolute top-0 left-0 overflow-hidden pointer-events-none" style={{ width: `${(rating % 1) * 100}%` }}>
@@ -190,7 +199,7 @@ const DashboardPage: React.FC = () => {
                       })}
                       <span className="ml-3 text-lg font-black text-zinc-900 dark:text-white leading-none">{(user.rating || 0).toFixed(1)}</span>
                    </div>
-                   <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Verified Performance</p>
+                   <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Based on customer feedback</p>
                 </div>
              </div>
 

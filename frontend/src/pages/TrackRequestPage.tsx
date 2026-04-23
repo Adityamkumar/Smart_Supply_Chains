@@ -158,7 +158,7 @@ const RequestCard: React.FC<{ request: any, index: number }> = ({ request, index
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                {request.assignedVolunteers.map((vol: any) => (
-                 <PublicRatingCard key={vol._id} volunteer={vol} />
+                 <PublicRatingCard key={vol._id} volunteer={vol} requestId={request._id} />
                ))}
             </div>
          </div>
@@ -167,16 +167,22 @@ const RequestCard: React.FC<{ request: any, index: number }> = ({ request, index
   );
 };
 
-const PublicRatingCard: React.FC<{ volunteer: any }> = ({ volunteer }) => {
+const PublicRatingCard: React.FC<{ volunteer: any, requestId: string }> = ({ volunteer, requestId }) => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(!!volunteer.alreadyRated);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleRate = async (val: number) => {
     setLoading(true);
     try {
-      await api.post('/user/rate-volunteer', { volunteerId: volunteer._id, rating: val });
+      await api.post('/user/rate-volunteer', { 
+        volunteerId: volunteer._id, 
+        rating: val,
+        message,
+        requestId
+      });
       setRating(val);
       setSubmitted(true);
       toast.success(`Thank you for rating ${volunteer.name}!`);
@@ -188,42 +194,70 @@ const PublicRatingCard: React.FC<{ volunteer: any }> = ({ volunteer }) => {
   };
 
   return (
-    <div className="bg-zinc-50 dark:bg-white/5 border border-transparent dark:hover:border-white/10 p-5 rounded-2xl transition-all">
-       <div className="flex items-center gap-4 mb-4">
-          <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-white/10 flex items-center justify-center font-black text-zinc-500 text-sm">
+    <div className="bg-zinc-50 dark:bg-white/5 border border-transparent dark:hover:border-white/10 p-6 rounded-3xl transition-all space-y-6">
+       <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-200 dark:bg-white/10 flex items-center justify-center font-black text-zinc-500 text-lg shadow-sm">
              {volunteer.name[0]}
           </div>
           <div className="min-w-0">
              <p className="text-sm font-bold text-zinc-900 dark:text-white truncate leading-none mb-1">{volunteer.name}</p>
-             <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest leading-none">Response Operative</p>
+             <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest leading-none">Volunteer</p>
           </div>
        </div>
 
-       <div className="space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Rate Quality of Service</p>
-          <div className="flex items-center gap-2">
-             {[1, 2, 3, 4, 5].map((star) => (
-               <button
-                 key={star}
-                 disabled={submitted || loading}
-                 onMouseEnter={() => setHover(star)}
-                 onMouseLeave={() => setHover(0)}
-                 onClick={() => handleRate(star)}
-                 className="transition-all active:scale-90 disabled:opacity-50"
-               >
-                  <Star 
-                    size={20} 
-                    className={clsx(
-                      "transition-all",
-                      (hover || rating) >= star ? "text-amber-500 fill-amber-500 scale-110" : "text-zinc-200 dark:text-zinc-800"
-                    )} 
-                  />
-               </button>
-             ))}
-             {loading && <Loader2 size={14} className="animate-spin text-zinc-400 ml-2" />}
-          </div>
-          {submitted && <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Feedback Synchronized</p>}
-       </div>
+       {!submitted ? (
+         <div className="space-y-4">
+            <div className="space-y-3">
+               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Leave a Message</p>
+               <textarea 
+                 placeholder="How was the service? (Optional)"
+                 value={message}
+                 onChange={(e) => setMessage(e.target.value)}
+                 rows={2}
+                 className="w-full px-4 py-2.5 bg-white dark:bg-black/20 border border-zinc-200 dark:border-white/10 rounded-xl outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white transition-all text-xs dark:text-white resize-none"
+               />
+            </div>
+
+            <div className="space-y-3">
+               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Rate your experience</p>
+               <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      disabled={loading}
+                      onMouseEnter={() => setHover(star)}
+                      onMouseLeave={() => setHover(0)}
+                      onClick={() => handleRate(star)}
+                      className="transition-all active:scale-90 disabled:opacity-50"
+                    >
+                       <Star 
+                         size={22} 
+                         className={clsx(
+                           "transition-all",
+                           (hover || rating) >= star ? "text-amber-500 fill-amber-500 scale-110" : "text-zinc-200 dark:text-zinc-800"
+                         )} 
+                       />
+                    </button>
+                  ))}
+                  {loading && <Loader2 size={14} className="animate-spin text-zinc-400 ml-2" />}
+               </div>
+            </div>
+         </div>
+       ) : (
+         <motion.div 
+           initial={{ opacity: 0, scale: 0.95 }}
+           animate={{ opacity: 1, scale: 1 }}
+           className="py-4 text-center space-y-2"
+         >
+            <div className="w-10 h-10 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-2">
+               <CheckCircle2 size={20} className="text-emerald-500" />
+            </div>
+            <p className="text-sm font-bold text-emerald-500 uppercase tracking-[0.15em]">Feedback Received</p>
+            <p className="text-xs text-zinc-400 font-medium tracking-tight">
+               {volunteer.alreadyRated ? "You have already rated this volunteer." : "Thank you for your feedback!"}
+            </p>
+         </motion.div>
+       )}
     </div>
   );
 };

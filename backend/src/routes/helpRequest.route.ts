@@ -42,10 +42,20 @@ router.get("/track/:phone", helpRequestLimiter, async (req, res) => {
 
       let volunteers = [];
       if (request.linkedTask) {
+        const { Rating } = await import("../models/rating.model.js");
         const assignments = await Assignment.find({ task: request.linkedTask }).populate('volunteer', 'name _id rating');
-        volunteers = assignments
+        
+        volunteers = await Promise.all(assignments
           .filter((a: any) => a.volunteer)
-          .map((a: any) => a.volunteer);
+          .map(async (a: any) => {
+             const vol = a.volunteer.toObject();
+             // Check if this voter (identified by phone) has already rated this volunteer
+             const hasRated = await Rating.exists({ 
+               volunteerId: vol._id, 
+               voterId: String(phone) 
+             });
+             return { ...vol, alreadyRated: !!hasRated };
+          }));
       }
       return { 
         ...request.toObject(), 

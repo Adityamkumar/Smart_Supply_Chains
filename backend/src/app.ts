@@ -41,6 +41,7 @@ app.get("/", (req, res) => {
 
 
 app.use((err: any, req: any, res: any, next: any) => {
+  console.error("Global Error Handler:", err);
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
 

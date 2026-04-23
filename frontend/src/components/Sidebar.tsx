@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ListTodo, ClipboardCheck, ShieldCheck, MapPin, X, MessageSquare, Users } from 'lucide-react';
+import { LayoutDashboard, ListTodo, ClipboardCheck, ShieldCheck, MapPin, X, MessageSquare, Users, Star } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -17,7 +17,8 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
     { name: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
     { name: 'All Tasks', path: '/app/tasks', icon: ListTodo },
     ...(!isAdmin ? [
-      { name: 'My Assignments', path: '/app/my-assignments', icon: ClipboardCheck }
+      { name: 'My Assignments', path: '/app/my-assignments', icon: ClipboardCheck },
+      { name: 'Ratings', path: '/app/ratings', icon: Star }
     ] : [
       { name: 'AI Assignment', path: '/app/admin-assignment', icon: ShieldCheck },
       { name: 'Help Requests', path: '/app/admin-help-requests', icon: MessageSquare }

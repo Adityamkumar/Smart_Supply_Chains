@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose'
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -9,6 +10,7 @@ import {
 } from "../config/cookie.config.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Rating } from "../models/rating.model.js";
+import { HelpRequest } from "../models/helpRequest.model.js";
 
 export const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password, skills, location, address } = req.body;
@@ -177,33 +179,53 @@ export const getAllVolunteers = asyncHandler(async (req, res) => {
 });
 
 export const rateVolunteer = asyncHandler(async (req, res) => {
-  const { volunteerId, rating } = req.body;
-  const voterId = req.user?._id?.toString() || req.ip || "anonymous";
+  const { volunteerId, rating, message, requestId } = req.body;
 
-  if (!volunteerId || rating === undefined) {
-    throw new ApiError(400, "Volunteer ID and rating are required");
+  if (!volunteerId || rating === undefined || !requestId) {
+    throw new ApiError(400, "Volunteer, rating, and request ID are required");
   }
 
-  const volunteer = await User.findById(volunteerId);
+  const vId = new mongoose.Types.ObjectId(volunteerId);
+  const rId = new mongoose.Types.ObjectId(requestId);
+
+  const volunteer = await User.findById(vId);
   if (!volunteer || volunteer.role !== "volunteer") {
     throw new ApiError(404, "Volunteer not found");
   }
 
-  // 1. Upsert the rating (Update if exists, otherwise create)
-  await Rating.findOneAndUpdate(
-    { volunteerId, voterId },
-    { rating: Number(rating) },
-    { upsert: true, new: true }
-  );
+  const helpRequest = await HelpRequest.findById(rId);
+  if (!helpRequest) {
+    throw new ApiError(404, "Mission request not found");
+  }
 
-  // 2. Recalculate average (Most accurate method)
-  const allRatings = await Rating.find({ volunteerId });
+  // Use phone as the unique voter ID to enforce 1:1 rating (one customer -> one volunteer)
+  const voterId = helpRequest.phone; 
+  const voterName = helpRequest.name;
+
+  // Check if this specific customer has already rated this volunteer before
+  const existingRating = await Rating.findOne({ volunteerId: vId, voterId });
+  if (existingRating) {
+    return res.status(400).json(new ApiResponse(400, null, "You have already provided feedback for this volunteer."));
+  }
+
+  // Create new rating record
+  await Rating.create({
+    volunteerId: vId,
+    voterId,
+    voterName,
+    requestId: rId,
+    rating: Number(rating),
+    message: message || ""
+  });
+
+  // Recalculate average rating for the volunteer profile
+  const allRatings = await Rating.find({ volunteerId: vId });
   const count = allRatings.length;
   const sum = allRatings.reduce((acc, curr) => acc + curr.rating, 0);
-  const average = sum / count;
+  const average = count > 0 ? (sum / count) : 0;
 
   const updatedVolunteer = await User.findByIdAndUpdate(
-    volunteerId,
+    vId,
     {
       $set: {
         sumOfRatings: sum,
@@ -214,5 +236,61 @@ export const rateVolunteer = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password -refreshToken");
 
-  return res.json(new ApiResponse(200, updatedVolunteer, "Rating updated successfully"));
+  return res.status(200).json(
+    new ApiResponse(200, updatedVolunteer, "Thank you! Your feedback has been recorded.")
+  );
+});
+
+export const getVolunteerReviews = asyncHandler(async (req, res) => {
+  const { volunteerId } = req.params;
+
+  if (!volunteerId) {
+    throw new ApiError(400, "Volunteer ID is required");
+  }
+
+  const reviews = await Rating.find({ volunteerId }).sort({ createdAt: -1 });
+
+  return res.json(new ApiResponse(200, reviews, "Reviews fetched successfully"));
+});
+
+export const deleteRating = asyncHandler(async (req, res) => {
+  const { ratingId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(ratingId)) {
+    throw new ApiError(400, "Invalid Rating ID format");
+  }
+
+  const ratingDoc = await Rating.findById(ratingId);
+  if (!ratingDoc) {
+    throw new ApiError(404, "Rating not found");
+  }
+
+  const volunteerId = ratingDoc.volunteerId;
+
+  // Authorization: Only the volunteer who received the rating or an admin can delete it
+  if (req.user?._id.toString() !== volunteerId.toString() && req.user?.role !== 'admin') {
+    throw new ApiError(403, "You are not authorized to delete this feedback");
+  }
+
+  await Rating.findByIdAndDelete(ratingId);
+
+  // Recalculate average
+  const allRatings = await Rating.find({ volunteerId });
+  const count = allRatings.length;
+  const sum = allRatings.reduce((acc, curr) => acc + curr.rating, 0);
+  const average = count > 0 ? sum / count : 0;
+
+  await User.findByIdAndUpdate(
+    volunteerId,
+    {
+      $set: {
+        sumOfRatings: sum,
+        totalRatings: count,
+        rating: Math.round(average * 10) / 10,
+      },
+    },
+    { new: true }
+  );
+
+  return res.json(new ApiResponse(200, null, "Rating deleted and profile stats updated successfully"));
 });
