@@ -227,7 +227,7 @@ const AdminHelpRequestsPage: React.FC = () => {
                                     ...req,
                                     description: aiData.description,
                                     priority: aiData.priority,
-                                    volunteersNeeded: aiData.volunteersNeeded
+                                    volunteersNeeded: req.volunteersNeeded > 0 ? req.volunteersNeeded : aiData.volunteersNeeded
                                   };
                                   
                                   convertToTaskMutation.mutate(customTask as any);

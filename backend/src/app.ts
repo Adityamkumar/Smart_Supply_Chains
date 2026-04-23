@@ -50,7 +50,6 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-import { ApiError } from "./utils/ApiError.js";
 
 app.use((err: any, req: any, res: any, next: any) => {
   const statusCode = err.statusCode || 500;

@@ -66,12 +66,12 @@ Required JSON Schema:
   "title": "Short, clear mission title (max 5-7 words)",
   "description": "Professional summary of the emergency mission",
   "priority": "low" | "medium" | "high",
-  "volunteersNeeded": number (integer),
+  "volunteersNeeded": number (integer, be conservative, usually 1-3 unless it sounds like a large scale operation),
   "requiredSkills": string[] (Choose from: Medical, Rescue, Logistics, Food, Shelter, Translation, Driving),
   "address": "Extracted location address if found, otherwise empty string"
 }
 
-If details are missing, use best judgment based on the situation. Return ONLY the JSON block. Do not include any other text or markdown formatting.
+If details are missing, use best judgment based on the situation. If the text mentions a number of people needed, use that. Return ONLY the JSON block. Do not include any other text or markdown formatting.
 `;
 
     const response = await ai.models.generateContent({
