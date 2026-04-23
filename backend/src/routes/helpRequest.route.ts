@@ -24,7 +24,7 @@ router.get("/all", verifyJwt, authorizeRoles("admin"), getAllHelpRequests);
 router.get("/track/:phone", helpRequestLimiter, async (req, res) => {
   try {
     const { phone } = req.params;
-    const requests = await HelpRequest.find({ phone }).sort({ createdAt: -1 });
+    const requests = await HelpRequest.find({ phone: String(phone) }).sort({ createdAt: -1 });
     
     const results = await Promise.all(requests.map(async (request) => {
       let volunteers = [];
