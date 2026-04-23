@@ -4,6 +4,8 @@ export interface IHelpRequest extends Document {
   name: string;
   phone: string;
   description: string;
+  descriptionEnglish?: string;
+  descriptionHindi?: string;
   location: {
     address: string;
     coordinates: [number, number];
@@ -21,6 +23,8 @@ const helpRequestSchema = new Schema<IHelpRequest>(
     name: { type: String, required: true },
     phone: { type: String, required: true },
     description: { type: String, required: true },
+    descriptionEnglish: { type: String },
+    descriptionHindi: { type: String },
     location: {
       address: { type: String, required: true },
       coordinates: {

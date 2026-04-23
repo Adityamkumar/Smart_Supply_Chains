@@ -27,6 +27,19 @@ router.get("/track/:phone", helpRequestLimiter, async (req, res) => {
     const requests = await HelpRequest.find({ phone: String(phone) }).sort({ createdAt: -1 });
     
     const results = await Promise.all(requests.map(async (request) => {
+      // Retroactive translation for old requests
+      if (!request.descriptionEnglish || !request.descriptionHindi) {
+        try {
+          const { translateToLanguages } = await import("../services/ai.service.js");
+          const translations = await translateToLanguages(request.description);
+          request.descriptionEnglish = translations.english;
+          request.descriptionHindi = translations.hindi;
+          await request.save();
+        } catch (err) {
+          console.error("Delayed Translation Failed:", err);
+        }
+      }
+
       let volunteers = [];
       if (request.linkedTask) {
         const assignments = await Assignment.find({ task: request.linkedTask }).populate('volunteer', 'name _id rating');

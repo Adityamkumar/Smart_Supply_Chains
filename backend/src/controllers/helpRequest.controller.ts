@@ -2,6 +2,7 @@ import { HelpRequest } from "../models/helpRequest.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { translateToLanguages } from "../services/ai.service.js";
 
 export const createHelpRequest = asyncHandler(async (req, res) => {
   const { name, phone, description, location, volunteersNeeded, priority } = req.body;
@@ -10,10 +11,14 @@ export const createHelpRequest = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required including location and coordinates");
   }
 
+  const translations = await translateToLanguages(description);
+
   const helpRequest = await HelpRequest.create({
     name,
     phone,
-    description,  
+    description,
+    descriptionEnglish: translations.english,
+    descriptionHindi: translations.hindi,
     location,
     volunteersNeeded,
     priority,

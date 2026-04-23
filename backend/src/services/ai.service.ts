@@ -100,3 +100,34 @@ If details are missing, use best judgment based on the situation. If the text me
     throw new Error(error.message || "Failed to analyze emergency report with AI");
   }
 };
+
+export const translateToLanguages = async (text: string) => {
+  try {
+    const prompt = `
+    You are a professional translator. 
+    Translate the following text into BOTH:
+    1. Professional English
+    2. Clear Hindi (Devanagari script)
+
+    Original Text: "${text}"
+
+    Return ONLY a JSON response in this exact format:
+    {
+      "english": "English translation here",
+      "hindi": "Hindi translation here"
+    }
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
+
+    const resultText = response?.text || "";
+    const cleaned = resultText.replace(/```json|```/g, "").trim();
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error("Translation Error:", error);
+    return { english: text, hindi: text }; // Fallback
+  }
+};

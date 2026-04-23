@@ -20,6 +20,12 @@ const HelpRequestPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (formData.phone.length !== 10) {
+      toast.error("Please enter a valid 10-digit mobile number");
+      return;
+    }
+
     setLoading(true);
     try {
 
@@ -95,9 +101,13 @@ const HelpRequestPage: React.FC = () => {
                 required
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => {
+                   const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                   setFormData({ ...formData, phone: value });
+                }}
+                maxLength={10}
                 className="w-full px-4 py-3 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 focus:ring-1 focus:ring-rose-500 focus:border-rose-500 rounded-xl outline-none transition-all dark:text-white text-sm"
-                placeholder="+91 XXXXX XXXXX"
+                placeholder="10-digit mobile number"
               />
             </div>
           </div>

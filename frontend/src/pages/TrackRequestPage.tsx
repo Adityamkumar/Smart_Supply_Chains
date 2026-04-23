@@ -55,9 +55,10 @@ const TrackRequestPage: React.FC = () => {
            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
            <input 
              type="tel"
-             placeholder="Enter registered mobile number..."
+             placeholder="Enter 10-digit mobile number..."
              value={phone}
-             onChange={(e) => setPhone(e.target.value)}
+             onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+             maxLength={10}
              className="w-full pl-12 pr-32 py-4 bg-white dark:bg-[#121212] border border-zinc-200 dark:border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white transition-all text-sm font-medium dark:text-white shadow-sm"
            />
            <button 
@@ -94,6 +95,16 @@ const TrackRequestPage: React.FC = () => {
 };
 
 const RequestCard: React.FC<{ request: any, index: number }> = ({ request, index }) => {
+  const [useHindi, setUseHindi] = useState(false);
+
+  // Strictly check for English version first
+  const descEng = request.descriptionEnglish;
+  const descHin = request.descriptionHindi;
+
+  const displayDescription = useHindi 
+    ? (descHin || request.description) 
+    : (descEng || request.description);
+
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98, y: 20 }}
@@ -101,7 +112,13 @@ const RequestCard: React.FC<{ request: any, index: number }> = ({ request, index
       transition={{ delay: index * 0.1 }}
       className="bg-white dark:bg-[#121212] border border-zinc-200 dark:border-white/10 rounded-3xl p-8 shadow-sm overflow-hidden relative group"
     >
-       <div className="absolute top-0 right-0 p-8">
+       <div className="absolute top-0 right-0 p-8 flex items-center gap-3">
+          <button 
+            onClick={() => setUseHindi(!useHindi)}
+            className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-zinc-200 dark:border-white/10 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 transition-all"
+          >
+            {useHindi ? "Show English" : "Translate to Hindi"}
+          </button>
           <div className={clsx(
             "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
             request.status === 'completed' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
@@ -117,7 +134,9 @@ const RequestCard: React.FC<{ request: any, index: number }> = ({ request, index
              <Heart size={12} fill="currentColor" />
              <span>Signal Live</span>
           </div>
-          <h3 className="text-2xl font-semibold text-zinc-900 dark:text-white leading-tight">{request.description}</h3>
+          <h3 className="text-2xl font-semibold text-zinc-900 dark:text-white leading-tight">
+            {displayDescription}
+          </h3>
           <div className="flex flex-wrap gap-6 text-sm text-zinc-500 dark:text-zinc-400 font-light">
              <div className="flex items-center gap-2">
                 <MapPin size={16} className="text-zinc-300" />
