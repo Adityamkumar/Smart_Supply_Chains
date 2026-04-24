@@ -312,7 +312,7 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
   const isPasswordValid = await user.isPasswordCorrect(password);
 
   if (!isPasswordValid) {
-    throw new ApiError(401, "Authentication failed: Incorrect password provided");
+    throw new ApiError(401, "Invalid password. Access denied.");
   }
 
   // 1. Delete all assignments (Clean up field data)
@@ -328,5 +328,5 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("refreshToken", clearCookieOptions)
     .clearCookie("accessToken", clearCookieOptions)
-    .json(new ApiResponse(200, {}, "Profile and all tactical data permanently purged"));
+    .json(new ApiResponse(200, {}, "Account deleted"));
 });

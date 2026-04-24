@@ -1,6 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ListTodo, ClipboardCheck, ShieldCheck, MapPin, X, MessageSquare, Users, Star } from 'lucide-react';
+import { LayoutDashboard, ListTodo, ClipboardCheck, ShieldCheck, MapPin, X, MessageSquare, Users, Star, Trash2, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import api from '../services/api';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -10,8 +14,9 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const isAdmin = user?.role === 'admin';
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const menuItems = [
     { name: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
@@ -99,9 +104,110 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
                  </div>
               </div>
            </div>
+           
+           {!isAdmin && (
+              <button 
+                onClick={() => setShowDeleteModal(true)}
+                className="w-full mt-4 py-2 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-rose-500 transition-all border border-transparent hover:border-rose-500/10 rounded-lg active:scale-95"
+              >
+                <Trash2 size={12} />
+                Delete Profile
+              </button>
+            )}
         </div>
+
+        <AnimatePresence>
+            {showDeleteModal && (
+              <DeleteAccountModal 
+                onClose={() => setShowDeleteModal(false)} 
+                logout={logout} 
+              />
+            )}
+         </AnimatePresence>
       </aside>
     </>
+  );
+};
+
+const DeleteAccountModal: React.FC<{onClose: () => void, logout: () => void}> = ({ onClose, logout }) => {
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password) return toast.error('Password required');
+    
+    setLoading(true);
+    try {
+      await api.delete('/user/delete-profile', { data: { password } });
+      toast.success('Account deleted');
+      logout();
+      window.location.href = '/';
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Access denied');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+       <div 
+         onClick={onClose}
+         className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md"
+       />
+       <motion.div 
+         initial={{ opacity: 0, scale: 0.95, y: 20 }}
+         animate={{ opacity: 1, scale: 1, y: 0 }}
+         exit={{ opacity: 0, scale: 0.95, y: 20 }}
+         className="bg-white dark:bg-[#121212] w-full max-w-sm rounded-3xl shadow-2xl relative z-10 border border-zinc-200 dark:border-white/5"
+       >
+          <div className="p-8 text-center space-y-6">
+             <div className="w-14 h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center mx-auto text-rose-500">
+                <AlertCircle size={28} />
+             </div>
+             
+             <div>
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-white uppercase tracking-tight">Delete Account?</h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 leading-relaxed">
+                   This action is permanent. All your data will be deleted.
+                </p>
+             </div>
+
+             <form onSubmit={handleDelete} className="space-y-4 pt-2">
+                <div className="relative group">
+                   <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" />
+                   <input 
+                     type="password"
+                     required
+                     placeholder="Confirm password"
+                     value={password}
+                     onChange={(e) => setPassword(e.target.value)}
+                     className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-white/10 rounded-xl text-xs outline-none focus:ring-1 focus:ring-rose-500 transition-all"
+                   />
+                </div>
+                
+                <div className="flex flex-col gap-2 pt-2">
+                   <button 
+                     type="submit"
+                     disabled={loading}
+                     className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-[11px] uppercase tracking-wider transition-all disabled:opacity-50"
+                   >
+                     {loading ? <Loader2 className="animate-spin" size={16} /> : "Delete Account"}
+                   </button>
+                   
+                   <button 
+                     type="button"
+                     onClick={onClose}
+                     className="w-full py-3 text-zinc-500 dark:text-zinc-400 font-bold text-[11px] uppercase tracking-wider hover:text-zinc-900 dark:hover:text-white transition-all"
+                   >
+                     Cancel
+                   </button>
+                </div>
+             </form>
+          </div>
+       </motion.div>
+    </div>
   );
 };
 

@@ -23,7 +23,6 @@ const DashboardPage: React.FC = () => {
   const { user, updateUser } = useAuthStore();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const isAdmin = user?.role === 'admin';
 
@@ -297,11 +296,6 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      <AnimatePresence>
-        {showDeleteModal && (
-          <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />
-        )}
-      </AnimatePresence>
     </div>
   );
 };
@@ -339,91 +333,5 @@ const StatCard: React.FC<{ label: string; value: any; icon: React.ReactNode, hig
   </motion.div>
 );
 
-const DeleteAccountModal: React.FC<{onClose: () => void}> = ({ onClose }) => {
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const logout = useAuthStore(state => state.logout);
-
-  const handleDelete = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!password) return toast.error('Verification password required');
-    
-    setLoading(true);
-    try {
-      await api.delete('/user/delete-profile', { data: { password } });
-      toast.success('Tactical records purged. Account deleted.');
-      logout();
-      window.location.href = '/';
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Purge failed: Access Denied');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-       <motion.div 
-         initial={{ opacity: 0 }}
-         animate={{ opacity: 1 }}
-         exit={{ opacity: 0 }}
-         onClick={onClose}
-         className="absolute inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-md"
-       />
-       <motion.div 
-         initial={{ opacity: 0, scale: 0.95, y: 20 }}
-         animate={{ opacity: 1, scale: 1, y: 0 }}
-         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-         className="bg-white dark:bg-[#121212] w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10 border border-zinc-200 dark:border-white/5"
-       >
-          <div className="p-8 text-center space-y-6">
-             <div className="w-16 h-16 bg-rose-500/10 rounded-3xl flex items-center justify-center mx-auto text-rose-500 mb-2">
-                <AlertCircle size={32} />
-             </div>
-             
-             <div>
-                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white uppercase tracking-tight">Delete Account?</h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 leading-relaxed">
-                   This action is <span className="font-bold text-rose-500">permanent</span>. All mission history, credentials, and tactical data will be purged.
-                </p>
-             </div>
-
-             <form onSubmit={handleDelete} className="space-y-4 pt-4">
-                <div className="relative group">
-                   <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" />
-                   <input 
-                     type="password"
-                     required
-                     placeholder="Confirm account password"
-                     value={password}
-                     onChange={(e) => setPassword(e.target.value)}
-                     className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-white/10 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-rose-500 transition-all font-mono"
-                   />
-                </div>
-                
-                <div className="flex flex-col gap-3">
-                   <button 
-                     type="submit"
-                     disabled={loading}
-                     className="w-full py-4 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-rose-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
-                   >
-                     {loading ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={14} />}
-                     Purge Records
-                   </button>
-                   
-                   <button 
-                     type="button"
-                     onClick={onClose}
-                     className="w-full py-4 bg-zinc-100 dark:bg-white/5 text-zinc-500 dark:text-zinc-400 rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] hover:text-zinc-900 dark:hover:text-white transition-all"
-                   >
-                     Abort Deletion
-                   </button>
-                </div>
-             </form>
-          </div>
-       </motion.div>
-    </div>
-  );
-};
 
 export default DashboardPage;
