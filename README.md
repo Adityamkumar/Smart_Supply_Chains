@@ -30,7 +30,11 @@ VolunSync is a state-of-the-art disaster response platform designed to streamlin
 *   **Admin HUD**: Complete overview of intelligence signal requests, active missions, and personnel status.
 *   **Volunteer Portal**: Personalized mission feed with one-click acceptance and status updates.
 
-### ⚡ 4. High-Performance Architecture
+### ⭐ 4. Volunteer Support & Accountability
+*   **Rating System**: Integrated feedback loop where mission outcomes are rated, ensuring high-quality rescue standards.
+*   **Secure Account Management**: Permanent, password-verified account deletion for volunteers, ensuring complete data sovereignty.
+
+### ⚡ 5. High-Performance Architecture
 *   **Redis Caching**: Sub-millisecond data retrieval for high-traffic scenarios using Upstash.
 *   **Concurrent Management**: Real-time assignment tracking to prevent resource overlap.
 
