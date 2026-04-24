@@ -125,14 +125,6 @@ const DashboardPage: React.FC = () => {
               >
                  {user.availability ? 'Go Offline' : 'Go Online'}
               </button>
-
-              <button 
-                 onClick={() => setShowDeleteModal(true)}
-                 className="w-full mt-2 py-2.5 rounded-xl font-bold text-[9px] uppercase tracking-wider text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-500/5 transition-all active:scale-[0.97] flex items-center justify-center gap-2 border border-transparent hover:border-rose-500/20"
-               >
-                  <Trash2 size={12} />
-                  Delete Tactical Profile
-               </button>
            </motion.div>
          )}
       </motion.div>

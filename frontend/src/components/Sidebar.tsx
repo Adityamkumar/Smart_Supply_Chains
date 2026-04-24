@@ -114,17 +114,17 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
                 Delete Profile
               </button>
             )}
-        </div>
-
-        <AnimatePresence>
-            {showDeleteModal && (
-              <DeleteAccountModal 
-                onClose={() => setShowDeleteModal(false)} 
-                logout={logout} 
-              />
-            )}
-         </AnimatePresence>
+         </div>
       </aside>
+
+      <AnimatePresence>
+          {showDeleteModal && (
+            <DeleteAccountModal 
+              onClose={() => setShowDeleteModal(false)} 
+              logout={logout} 
+            />
+          )}
+      </AnimatePresence>
     </>
   );
 };
