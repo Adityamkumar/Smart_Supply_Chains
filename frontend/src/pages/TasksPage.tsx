@@ -466,7 +466,9 @@ const TaskDetailsModal: React.FC<{task: Task, onClose: () => void}> = ({ task, o
     queryFn: async () => {
       const response = await api.get(`/assignVolunteer/${task._id}`);
       return response.data.data;
-    }
+    },
+    staleTime: 0,
+    gcTime: 0, // Ensure it doesn't even stay in garbage collection for this specific modal
   });
 
   const revokeMutation = useMutation({

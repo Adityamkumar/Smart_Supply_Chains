@@ -9,8 +9,8 @@ import api from './services/api';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60,
-      refetchOnWindowFocus: false,
+      staleTime: 1000 * 5,
+      refetchOnWindowFocus: true,
     },
   },
 });

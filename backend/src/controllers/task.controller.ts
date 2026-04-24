@@ -33,6 +33,8 @@ export const createTask = asyncHandler(async (req, res) => {
     createdBy: req.user?._id,
   });
 
+  await deleteByPattern("tasks:*");
+
   return res
     .status(201)
     .json(new ApiResponse(201, task, "Task created successfully"));

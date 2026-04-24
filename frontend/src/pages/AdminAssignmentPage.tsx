@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import type { Task, Assignment } from '../types';
 import { Shield, Loader2, Sparkles, AlertCircle, Play, Trash2, MapPin, Zap, Star } from 'lucide-react';
@@ -7,24 +8,22 @@ import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminAssignmentPage: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const queryClient = useQueryClient();
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
   const [results, setResults] = useState<Assignment[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const response = await api.get('/task/all');
-        setTasks(response.data.data.filter((t: Task) => t.status === 'open'));
-      } catch (error) {
-        console.error('Failed to fetch tasks', error);
-      }
-    };
-    fetchTasks();
-  }, []);
+  const { data: rawTasks = [], isLoading: tasksLoading } = useQuery<Task[]>({
+    queryKey: ['tasks', 'open'],
+    queryFn: async () => {
+      const response = await api.get('/task/all');
+      return response.data.data;
+    }
+  });
+
+  const tasks = rawTasks.filter((t: Task) => t.status === 'open');
 
   const runAIOrchestration = async () => {
     if (!selectedTaskId) {
@@ -94,7 +93,13 @@ const AdminAssignmentPage: React.FC = () => {
             <div className="bg-white dark:bg-[#121212] rounded-2xl border border-zinc-200 dark:border-white/5 p-5 sm:p-6 shadow-sm">
                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-4 block">Select Objective</label>
                <div className="space-y-3 max-h-[40vh] sm:max-h-none overflow-y-auto no-scrollbar">
-                  {tasks.length > 0 ? tasks.map(task => (
+                  {tasksLoading ? (
+                    <div className="space-y-3">
+                       {[1, 2, 3].map(i => (
+                         <div key={i} className="h-16 bg-zinc-50 dark:bg-white/5 rounded-xl animate-pulse" />
+                       ))}
+                    </div>
+                  ) : tasks.length > 0 ? tasks.map(task => (
                     <button
                       key={task._id}
                       onClick={() => {setSelectedTaskId(task._id); setShowResults(false);}}

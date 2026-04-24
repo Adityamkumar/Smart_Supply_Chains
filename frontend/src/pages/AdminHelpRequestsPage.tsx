@@ -15,6 +15,7 @@ const AdminHelpRequestsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [aiTriageLoadingId, setAiTriageLoadingId] = useState<string | null>(null);
 
   const { data: helpRequests = [], isLoading } = useQuery<HelpRequest[]>({
     queryKey: ['help-requests'],
@@ -217,27 +218,31 @@ const AdminHelpRequestsPage: React.FC = () => {
                                Accept
                             </button>
                             <button 
-                              onClick={async () => {
-                                try {
-                                  const res = await api.post('/assign/ai/triage', { rawText: req.description });
-                                  const aiData = res.data.data;
-                                  
-                                  const customTask = {
-                                    ...req,
-                                    description: aiData.description,
-                                    priority: aiData.priority,
-                                    volunteersNeeded: req.volunteersNeeded > 0 ? req.volunteersNeeded : aiData.volunteersNeeded
-                                  };
-                                  
-                                  convertToTaskMutation.mutate(customTask as any);
-                                  toast.success("AI successfully created the task details!");
-                                } catch (err: any) {
-                                  toast.error("AI Analysis failed: " + err.message);
-                                }
-                              }}
-                              className="px-4 sm:px-6 py-2.5 bg-rose-500 text-white hover:bg-rose-600 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 active:scale-[0.97] shadow shadow-rose-500/20"
+                               onClick={async () => {
+                                 setAiTriageLoadingId(req._id);
+                                 try {
+                                   const res = await api.post('/assign/ai/triage', { rawText: req.description });
+                                   const aiData = res.data.data;
+                                   
+                                   const customTask = {
+                                     ...req,
+                                     description: aiData.description,
+                                     priority: aiData.priority,
+                                     volunteersNeeded: req.volunteersNeeded > 0 ? req.volunteersNeeded : aiData.volunteersNeeded
+                                   };
+                                   
+                                   await convertToTaskMutation.mutateAsync(customTask as any);
+                                   toast.success("AI successfully created the task details!");
+                                 } catch (err: any) {
+                                   toast.error("AI Analysis failed: " + err.message);
+                                 } finally {
+                                   setAiTriageLoadingId(null);
+                                 }
+                               }}
+                               disabled={aiTriageLoadingId === req._id || convertToTaskMutation.isPending}
+                               className="px-4 sm:px-6 py-2.5 bg-rose-500 text-white hover:bg-rose-600 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 active:scale-[0.97] shadow shadow-rose-500/20 disabled:opacity-70"
                             >
-                               <Sparkles size={12} sm:size={14} fill="currentColor" />
+                               {aiTriageLoadingId === req._id ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={12} sm:size={14} fill="currentColor" />}
                                AI Build
                             </button>
                             <button 
