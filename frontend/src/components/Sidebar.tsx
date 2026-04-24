@@ -191,7 +191,7 @@ const DeleteAccountModal: React.FC<{onClose: () => void, logout: () => void}> = 
                    <button 
                      type="submit"
                      disabled={loading}
-                     className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-[11px] uppercase tracking-wider transition-all disabled:opacity-50"
+                     className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-[11px] uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center"
                    >
                      {loading ? <Loader2 className="animate-spin" size={16} /> : "Delete Account"}
                    </button>
