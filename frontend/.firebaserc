@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "smart-resource-allocatio-37603",
+    "npm run build": "smart-resource-allocatio-37603"
+  },
+  "targets": {},
+  "etags": {}
+}

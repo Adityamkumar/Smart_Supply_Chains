@@ -10,9 +10,23 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 app.use(cors({
-  origin: process.env.NODE_ENV === "development" 
-    ? true 
-    : (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : true),
+  origin: function (origin, callback) {
+    if (process.env.NODE_ENV === "development") {
+      return callback(null, true);
+    }
+
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+      : [];
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
 }));
 
